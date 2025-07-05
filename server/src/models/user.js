@@ -1,101 +1,210 @@
 const mongoose = require('mongoose');
-const validator = require('validator');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 
 const { Schema } = mongoose;
-const userSchema = Schema(
-  {
-    name: { type: String, required: true, trim: true },
-    username: { type: String, unique: true, required: true, trim: true, lowercase: true },
-    email: {
-      type: String,
-      unique: true,
-      required: true,
-      trim: true,
-      lowercase: true,
-      validate(value) {
-        if (!validator.isEmail(value)) {
-          throw new Error('Email is invalid');
-        }
-      },
-    },
-    password: {
-      type: String,
-      trim: true,
-      minlength: 7,
-      validate(value) {
-        if (value.toLowerCase().includes('password')) {
-          throw new Error('Password should not contain word: password');
-        }
-      },
-    },
-    role: {
-      type: String,
-      default: 'guest',
-      enum: ['guest', 'admin', 'superadmin', 'staff', 'user'],
-    },
-    facebook: String,
-    google: String,
-    phone: {
-      type: String,
-      unique: true,
-      trim: true,
-      validate(value) {
-        if (!validator.isMobilePhone(value)) {
-          throw new Error('Phone is invalid');
-        }
-      },
-    },
-    imageurl: String,
-    tokens: [
-      {
-        token: {
-          type: String,
-          required: true,
-        },
-      },
-    ],
+
+const seatReservationSchema = new Schema({
+  row: {
+    type: String,
+    required: true,
+    trim: true,
+    uppercase: true
   },
-  { timestamps: true }
-);
-
-userSchema.methods.toJSON = function () {
-  const user = this.toObject();
-
-  if (user.role !== 'superadmin') {
-    delete user.updatedAt;
-    delete user.__v;
+  number: {
+    type: Number,
+    required: true,
+    min: 1
   }
+}, { _id: false });
 
-  delete user.password;
-  delete user.tokens;
-  return user;
-};
+const reservationSchema = new Schema({
+  reservationNumber: {
+    type: String,
+    unique: true,
+    required: true,
+    default: function() {
+      return 'RES' + Date.now() + Math.floor(Math.random() * 1000);
+    }
+  },
+  date: {
+    type: Date,
+    required: true,
+    validate: {
+      validator: function(v) {
+        return v instanceof Date && !isNaN(v);
+      },
+      message: 'Date must be a valid date'
+    }
+  },
+  startAt: {
+    type: String,
+    required: true,
+    trim: true,
+    validate: {
+      validator: function(v) {
+        // Validasi format waktu HH:MM
+        return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
+      },
+      message: 'Start time must be in HH:MM format'
+    }
+  },
+  seats: {
+    type: [seatReservationSchema],
+    required: true,
+    validate: {
+      validator: function(v) {
+        return v && v.length > 0;
+      },
+      message: 'At least one seat must be selected'
+    }
+  },
+  ticketPrice: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  total: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  movieId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Movie',
+    required: true
+  },
+  cinemaId: { // Perbaiki nama field dari cinemaIds ke cinemaId
+    type: Schema.Types.ObjectId,
+    ref: 'Cinema',
+    required: true
+  },
+  showtimeId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Showtime',
+    required: true
+  },
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  username: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  email: {
+    type: String,
+    required: true,
+    trim: true,
+    lowercase: true
+  },
+  phone: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'confirmed', 'cancelled', 'completed'],
+    default: 'pending'
+  },
+  checkin: {
+    type: Boolean,
+    default: false
+  },
+  checkinTime: {
+    type: Date
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['cash', 'card', 'digital_wallet', 'bank_transfer'],
+    default: 'cash'
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'refunded', 'failed'],
+    default: 'pending'
+  },
+  notes: {
+    type: String,
+    trim: true
+  },
+  // Untuk tracking expiry time reservasi
+  expiresAt: {
+    type: Date,
+    default: function() {
+      // Reservasi expired dalam 15 menit jika tidak dikonfirmasi
+      return new Date(Date.now() + 15 * 60 * 1000);
+    }
+  }
+}, { timestamps: true });
 
-userSchema.methods.generateAuthToken = async function () {
-  const token = jwt.sign({ _id: this._id.toString() }, 'mySecret');
-  this.tokens = this.tokens.concat({ token });
-  await this.save();
-  return token;
-};
+// Index untuk query yang sering digunakan
+reservationSchema.index({ reservationNumber: 1 });
+reservationSchema.index({ userId: 1 });
+reservationSchema.index({ movieId: 1, cinemaId: 1, date: 1 });
+reservationSchema.index({ status: 1 });
+reservationSchema.index({ expiresAt: 1 });
 
-userSchema.statics.findByCredentials = async function (username, password) {
-  const user = await this.findOne({ username });
-  if (!user) throw new Error('Unable to login');
-
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) throw new Error('Unable to login');
-
-  return user;
-};
-
-userSchema.pre('save', async function (next) {
-  if (this.isModified('password')) {
-    this.password = await bcrypt.hash(this.password, 8);
+// Pre-save middleware untuk calculate total
+reservationSchema.pre('save', function(next) {
+  if (this.isModified('seats') || this.isModified('ticketPrice')) {
+    this.total = this.seats.length * this.ticketPrice;
   }
   next();
 });
 
-const User = mongoose.model('User', userSchema);
-module.exports = User;
+// Method untuk confirm reservation
+reservationSchema.methods.confirm = function() {
+  this.status = 'confirmed';
+  this.paymentStatus = 'paid';
+  this.expiresAt = undefined; // Remove expiry when confirmed
+  return this.save();
+};
+
+// Method untuk cancel reservation
+reservationSchema.methods.cancel = function() {
+  this.status = 'cancelled';
+  return this.save();
+};
+
+// Method untuk checkin
+reservationSchema.methods.checkin = function() {
+  this.checkin = true;
+  this.checkinTime = new Date();
+  this.status = 'completed';
+  return this.save();
+};
+
+// Method untuk check if reservation is expired
+reservationSchema.methods.isExpired = function() {
+  return this.expiresAt && new Date() > this.expiresAt && this.status === 'pending';
+};
+
+// Static method untuk cleanup expired reservations
+reservationSchema.statics.cleanupExpired = async function() {
+  const expiredReservations = await this.find({
+    status: 'pending',
+    expiresAt: { $lt: new Date() }
+  });
+  
+  for (const reservation of expiredReservations) {
+    await reservation.cancel();
+  }
+  
+  return expiredReservations.length;
+};
+
+// Virtual untuk mendapatkan seat count
+reservationSchema.virtual('seatCount').get(function() {
+  return this.seats.length;
+});
+
+// Virtual untuk format seat display
+reservationSchema.virtual('seatDisplay').get(function() {
+  return this.seats.map(seat => `${seat.row}${seat.number}`).join(', ');
+});
+
+const Reservation = mongoose.model('Reservation', reservationSchema);
+
+module.exports = Reservation;
