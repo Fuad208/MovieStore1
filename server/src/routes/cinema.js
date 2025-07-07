@@ -1,3 +1,4 @@
+// server/src/routes/cinema.js
 const express = require('express');
 const auth = require('../middlewares/auth');
 const upload = require('../utils/multer');
@@ -21,7 +22,7 @@ router.post('/cinemas', auth.enhance, async (req, res) => {
 router.post('/cinemas/photo/:id', upload('cinemas').single('file'), async (req, res, next) => {
   const url = `${req.protocol}://${req.get('host')}`;
   const { file } = req;
-  const cinemaIds = req.params.id;
+  const cinemaId = req.params.id;
 
   try {
     if (!file) {
@@ -30,8 +31,10 @@ router.post('/cinemas/photo/:id', upload('cinemas').single('file'), async (req, 
       return next(error);
     }
 
-    const cinema = await Cinema.findById(cinemaIds);
-    if (!cinema) return res.status(404).send({ error: 'Cinema not found' });
+    const cinema = await Cinema.findById(cinemaId);
+    if (!cinema) {
+      return res.status(404).send({ error: 'Cinema not found' });
+    }
 
     cinema.image = `${url}/${file.path}`;
     await cinema.save();
@@ -57,7 +60,9 @@ router.get('/cinemas', async (req, res) => {
 router.get('/cinemas/:id', async (req, res) => {
   try {
     const cinema = await Cinema.findById(req.params.id);
-    if (!cinema) return res.status(404).send({ error: 'Cinema not found' });
+    if (!cinema) {
+      return res.status(404).send({ error: 'Cinema not found' });
+    }
     res.send(cinema);
   } catch (e) {
     res.status(400).send({ error: e.message });
@@ -76,7 +81,9 @@ router.patch('/cinemas/:id', auth.enhance, async (req, res) => {
 
   try {
     const cinema = await Cinema.findById(req.params.id);
-    if (!cinema) return res.status(404).send({ error: 'Cinema not found' });
+    if (!cinema) {
+      return res.status(404).send({ error: 'Cinema not found' });
+    }
 
     updates.forEach(update => (cinema[update] = req.body[update]));
     await cinema.save();
@@ -91,7 +98,9 @@ router.patch('/cinemas/:id', auth.enhance, async (req, res) => {
 router.delete('/cinemas/:id', auth.enhance, async (req, res) => {
   try {
     const cinema = await Cinema.findByIdAndDelete(req.params.id);
-    if (!cinema) return res.status(404).send({ error: 'Cinema not found' });
+    if (!cinema) {
+      return res.status(404).send({ error: 'Cinema not found' });
+    }
 
     res.send(cinema);
   } catch (e) {

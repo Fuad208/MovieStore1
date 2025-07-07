@@ -1,3 +1,4 @@
+// server/src/routes/users.js
 const express = require('express');
 const upload = require('../utils/multer');
 const User = require('../models/user');
@@ -8,35 +9,44 @@ const router = new express.Router();
 // Create a user
 router.post('/users', async (req, res) => {
   try {
-    const {role} = req.body;
-    if (role) throw new Error('you cannot set role property.');
+    const { role } = req.body;
+    if (role) {
+      return res.status(400).send({ error: 'You cannot set role property.' });
+    }
+    
     const user = new User(req.body);
     await user.save();
     const token = await user.generateAuthToken();
     res.status(201).send({ user, token });
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
+// Upload user photo
 router.post('/users/photo/:id', upload('users').single('file'), async (req, res, next) => {
   const url = `${req.protocol}://${req.get('host')}`;
   const { file } = req;
   const userId = req.params.id;
+
   try {
     if (!file) {
       const error = new Error('Please upload a file');
       error.httpStatusCode = 400;
       return next(error);
     }
+
     const user = await User.findById(userId);
-    if (!user) return res.sendStatus(404);
+    if (!user) {
+      return res.status(404).send({ error: 'User not found' });
+    }
+
     user.imageurl = `${url}/${file.path}`;
     await user.save();
     res.send({ user, file });
   } catch (e) {
-    console.log(e);
-    res.sendStatus(400).send(e);
+    console.error(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
@@ -53,53 +63,53 @@ router.post('/users/login', async (req, res) => {
   }
 });
 
+// Facebook Login
 router.post('/users/login/facebook', async (req, res) => {
-  const { email, userID, name } = req.body;
-  const nameArray = name.split(' ');
+  try {
+    const { email, userID, name } = req.body;
+    const nameArray = name.split(' ');
 
-  const user = await User.findOne({ facebook: userID });
-  if (!user) {
-    const newUser = new User({
-      name,
-      username: nameArray.join('') + userID,
-      email,
-      facebook: userID,
-    });
-    try {
-      await newUser.save();
-      const token = await newUser.generateAuthToken();
-      res.status(201).send({ user: newUser, token });
-    } catch (e) {
-      res.status(400).send(e);
+    let user = await User.findOne({ facebook: userID });
+    
+    if (!user) {
+      user = new User({
+        name,
+        username: nameArray.join('') + userID,
+        email,
+        facebook: userID,
+      });
+      await user.save();
     }
-  } else {
+
     const token = await user.generateAuthToken();
-    res.send({ user, token });
+    res.status(user.isNew ? 201 : 200).send({ user, token });
+  } catch (e) {
+    res.status(400).send({ error: e.message });
   }
 });
 
+// Google Login
 router.post('/users/login/google', async (req, res) => {
-  const { email, googleId, name } = req.body;
-  const nameArray = name.split(' ');
+  try {
+    const { email, googleId, name } = req.body;
+    const nameArray = name.split(' ');
 
-  const user = await User.findOne({ google: googleId });
-  if (!user) {
-    const newUser = new User({
-      name,
-      username: nameArray.join('') + googleId,
-      email,
-      google: googleId,
-    });
-    try {
-      await newUser.save();
-      const token = await newUser.generateAuthToken();
-      res.status(201).send({ user: newUser, token });
-    } catch (e) {
-      res.status(400).send(e);
+    let user = await User.findOne({ google: googleId });
+    
+    if (!user) {
+      user = new User({
+        name,
+        username: nameArray.join('') + googleId,
+        email,
+        google: googleId,
+      });
+      await user.save();
     }
-  } else {
+
     const token = await user.generateAuthToken();
-    res.send({ user, token });
+    res.status(user.isNew ? 201 : 200).send({ user, token });
+  } catch (e) {
+    res.status(400).send({ error: e.message });
   }
 });
 
@@ -110,134 +120,150 @@ router.post('/users/logout', auth.simple, async (req, res) => {
       return token.token !== req.token;
     });
     await req.user.save();
-    res.send({});
+    res.send({ message: 'Logout successful' });
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
-// Logout all
+// Logout all devices
 router.post('/users/logoutAll', auth.enhance, async (req, res) => {
   try {
     req.user.tokens = [];
     await req.user.save();
-    res.send();
+    res.send({ message: 'Logout from all devices successful' });
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
-// Get all users
+// Get all users (superadmin only)
 router.get('/users', auth.enhance, async (req, res) => {
-  if (req.user.role !== 'superadmin')
-    return res.status(400).send({
-      error: 'Only the god can see all the users!',
-    });
   try {
+    if (req.user.role !== 'superadmin') {
+      return res.status(403).send({
+        error: 'Only superadmin can view all users!',
+      });
+    }
+    
     const users = await User.find({});
     res.send(users);
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
-// User infos
+// Get current user info
 router.get('/users/me', auth.simple, async (req, res) => {
   try {
     res.send(req.user);
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
-// Get user by id only for admin
+// Get user by id (superadmin only)
 router.get('/users/:id', auth.enhance, async (req, res) => {
-  if (req.user.role !== 'superadmin')
-    return res.status(400).send({
-      error: 'Only the god can see the user!',
-    });
-  const _id = req.params.id;
   try {
-    const user = await User.findById(_id);
-    if (!user) return res.sendStatus(404);
+    if (req.user.role !== 'superadmin') {
+      return res.status(403).send({
+        error: 'Only superadmin can view specific users!',
+      });
+    }
+    
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).send({ error: 'User not found' });
+    }
     res.send(user);
   } catch (e) {
-    res.sendStatus(400);
+    res.status(400).send({ error: e.message });
   }
 });
 
-// Edit/Update user
+// Update current user
 router.patch('/users/me', auth.simple, async (req, res) => {
-  console.log(req.body);
-  const updates = Object.keys(req.body);
-  const allowedUpdates = ['name', 'phone', 'username', 'email', 'password'];
-  const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
-  if (!isValidOperation) return res.status(400).send({ error: 'Invalid updates!' });
-
   try {
+    const updates = Object.keys(req.body);
+    const allowedUpdates = ['name', 'phone', 'username', 'email', 'password'];
+    const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
+    
+    if (!isValidOperation) {
+      return res.status(400).send({ error: 'Invalid updates!' });
+    }
+
     const { user } = req;
     updates.forEach((update) => (user[update] = req.body[update]));
     await user.save();
     res.send(user);
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
-// Admin can update user by id
+// Admin update user by id
 router.patch('/users/:id', auth.enhance, async (req, res) => {
-  if (req.user.role !== 'superadmin')
-    return res.status(400).send({
-      error: 'Only the god can update the user!',
-    });
-  const _id = req.params.id;
-
-  const updates = Object.keys(req.body);
-  const allowedUpdates = ['name', 'phone', 'username', 'email', 'password', 'role'];
-  const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
-
-  if (!isValidOperation) return res.status(400).send({ error: 'Invalid updates!' });
-
   try {
-    const user = await User.findById(_id);
+    if (req.user.role !== 'superadmin') {
+      return res.status(403).send({
+        error: 'Only superadmin can update users!',
+      });
+    }
+
+    const updates = Object.keys(req.body);
+    const allowedUpdates = ['name', 'phone', 'username', 'email', 'password', 'role'];
+    const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
+
+    if (!isValidOperation) {
+      return res.status(400).send({ error: 'Invalid updates!' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).send({ error: 'User not found' });
+    }
+
     updates.forEach((update) => (user[update] = req.body[update]));
     await user.save();
-
-    if (!user) return res.sendStatus(404);
     res.send(user);
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
-// Delete by id
+// Delete user by id (superadmin only)
 router.delete('/users/:id', auth.enhance, async (req, res) => {
-  if (req.user.role !== 'superadmin')
-    return res.status(400).send({
-      error: 'Only the god can delete the user!',
-    });
-  const _id = req.params.id;
-
   try {
-    const user = await User.findByIdAndDelete(_id);
-    if (!user) return res.sendStatus(404);
+    if (req.user.role !== 'superadmin') {
+      return res.status(403).send({
+        error: 'Only superadmin can delete users!',
+      });
+    }
 
-    res.send({ message: 'User Deleted' });
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) {
+      return res.status(404).send({ error: 'User not found' });
+    }
+
+    res.send({ message: 'User deleted successfully' });
   } catch (e) {
-    res.sendStatus(400);
+    res.status(400).send({ error: e.message });
   }
 });
 
+// Delete current user (superadmin only)
 router.delete('/users/me', auth.simple, async (req, res) => {
-  if (req.user.role !== 'superadmin')
-    return res.status(400).send({
-      error: 'You cannot delete yourself!',
-    });
   try {
+    if (req.user.role !== 'superadmin') {
+      return res.status(403).send({
+        error: 'You cannot delete yourself unless you are superadmin!',
+      });
+    }
+
     await req.user.remove();
-    res.send(req.user);
+    res.send({ message: 'Account deleted successfully' });
   } catch (e) {
-    res.sendStatus(400);
+    res.status(400).send({ error: e.message });
   }
 });
 

@@ -1,3 +1,4 @@
+// server/src/routes/reservation.js
 const express = require('express');
 const auth = require('../middlewares/auth');
 const Reservation = require('../models/reservation');
@@ -8,15 +9,14 @@ const router = new express.Router();
 
 // Create a reservation
 router.post('/reservations', auth.simple, async (req, res) => {
-  const reservation = new Reservation(req.body);
-
-  const QRCode = await generateQR(`https://razorpay.com`);
-
   try {
+    const reservation = new Reservation(req.body);
+    const QRCode = await generateQR(`https://razorpay.com`);
+
     await reservation.save();
     res.status(201).send({ reservation, QRCode });
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
@@ -26,7 +26,7 @@ router.get('/reservations', auth.simple, async (req, res) => {
     const reservations = await Reservation.find({});
     res.send(reservations);
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
@@ -35,22 +35,29 @@ router.get('/reservations/:id', async (req, res) => {
   const _id = req.params.id;
   try {
     const reservation = await Reservation.findById(_id);
-    return !reservation ? res.sendStatus(404) : res.send(reservation);
+    if (!reservation) {
+      return res.status(404).send({ error: 'Reservation not found' });
+    }
+    res.send(reservation);
   } catch (e) {
-    return res.status(400).send(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
-// Get reservation checkin by id
-router.get('/reservations/checkin/:id', async (req, res) => {
+// Check-in reservation by id
+router.patch('/reservations/checkin/:id', async (req, res) => {
   const _id = req.params.id;
   try {
     const reservation = await Reservation.findById(_id);
+    if (!reservation) {
+      return res.status(404).send({ error: 'Reservation not found' });
+    }
+    
     reservation.checkin = true;
     await reservation.save();
-    return !reservation ? res.sendStatus(404) : res.send(reservation);
+    res.send(reservation);
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
@@ -70,15 +77,21 @@ router.patch('/reservations/:id', auth.enhance, async (req, res) => {
   ];
   const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
 
-  if (!isValidOperation) return res.status(400).send({ error: 'Invalid updates!' });
+  if (!isValidOperation) {
+    return res.status(400).send({ error: 'Invalid updates!' });
+  }
 
   try {
     const reservation = await Reservation.findById(_id);
+    if (!reservation) {
+      return res.status(404).send({ error: 'Reservation not found' });
+    }
+
     updates.forEach((update) => (reservation[update] = req.body[update]));
     await reservation.save();
-    return !reservation ? res.sendStatus(404) : res.send(reservation);
+    res.send(reservation);
   } catch (e) {
-    return res.status(400).send(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
@@ -87,9 +100,12 @@ router.delete('/reservations/:id', auth.enhance, async (req, res) => {
   const _id = req.params.id;
   try {
     const reservation = await Reservation.findByIdAndDelete(_id);
-    return !reservation ? res.sendStatus(404) : res.send(reservation);
+    if (!reservation) {
+      return res.status(404).send({ error: 'Reservation not found' });
+    }
+    res.send(reservation);
   } catch (e) {
-    return res.sendStatus(400);
+    res.status(400).send({ error: e.message });
   }
 });
 
@@ -100,7 +116,7 @@ router.get('/reservations/usermodeling/:username', async (req, res) => {
     const suggestedSeats = await userModeling.reservationSeatsUserModeling(username);
     res.send(suggestedSeats);
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
