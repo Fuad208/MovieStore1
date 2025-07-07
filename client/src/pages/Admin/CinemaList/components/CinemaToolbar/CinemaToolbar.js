@@ -12,13 +12,13 @@ class CinemaToolbar extends Component {
     openAddDialog: false
   };
 
-  OpenAddDialog() {
+  openAddDialog = () => {
     this.setState({ openAddDialog: true });
-  }
+  };
 
-  CloseAddDialog() {
+  closeAddDialog = () => {
     this.setState({ openAddDialog: false });
-  }
+  };
 
   render() {
     const { openAddDialog } = this.state;
@@ -37,19 +37,19 @@ class CinemaToolbar extends Component {
               onChange={onChangeSearch}
             />
             <Button
-              onClick={() => this.OpenAddDialog()}
+              onClick={this.openAddDialog}
               color="primary"
               size="small"
               variant="outlined">
-              Add
+              Add Cinema
             </Button>
           </div>
         </div>
         <ResponsiveDialog
           id="Add-cinema"
           open={openAddDialog}
-          handleClose={() => this.CloseAddDialog()}>
-          <AddCinema />
+          handleClose={this.closeAddDialog}>
+          <AddCinema handleClose={this.closeAddDialog} />
         </ResponsiveDialog>
       </Fragment>
     );
@@ -58,7 +58,9 @@ class CinemaToolbar extends Component {
 
 CinemaToolbar.propTypes = {
   className: PropTypes.string,
-  classes: PropTypes.object.isRequired
+  classes: PropTypes.object.isRequired,
+  search: PropTypes.string.isRequired,
+  onChangeSearch: PropTypes.func.isRequired
 };
 
 export default withStyles(styles)(CinemaToolbar);
