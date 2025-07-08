@@ -8,7 +8,8 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  TablePagination
+  TablePagination,
+  Typography
 } from '@material-ui/core';
 
 import { Portlet, PortletContent } from '../../../../../components';
@@ -43,18 +44,53 @@ class ReservationsTable extends Component {
   };
 
   handleChangeRowsPerPage = event => {
-    this.setState({ rowsPerPage: event.target.value });
+    this.setState({ rowsPerPage: event.target.value, page: 0 });
   };
 
   onFindAttr = (id, list, attr) => {
+    if (!id || !list || !Array.isArray(list)) return `Not ${attr} Found`;
     const item = list.find(item => item._id === id);
     return item ? item[attr] : `Not ${attr} Found`;
+  };
+
+  formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  formatCurrency = (amount) => {
+    if (!amount) return 'Rp 0';
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR'
+    }).format(amount);
   };
 
   render() {
     const { classes, className, reservations, movies, cinemas } = this.props;
     const { rowsPerPage, page } = this.state;
     const rootClassName = classNames(classes.root, className);
+
+    if (!reservations.length) {
+      return (
+        <Portlet className={rootClassName}>
+          <PortletContent>
+            <Typography variant="h6" align="center">
+              No reservations found
+            </Typography>
+          </PortletContent>
+        </Portlet>
+      );
+    }
 
     return (
       <Portlet className={rootClassName}>
@@ -64,6 +100,7 @@ class ReservationsTable extends Component {
               <TableRow>
                 <TableCell align="left">User</TableCell>
                 <TableCell align="left">Phone</TableCell>
+                <TableCell align="left">Date</TableCell>
                 <TableCell align="left">Start At</TableCell>
                 <TableCell align="left">Movie</TableCell>
                 <TableCell align="left">Cinema</TableCell>
@@ -82,15 +119,17 @@ class ReservationsTable extends Component {
                     hover
                     key={reservation._id}>
                     <TableCell className={classes.tableCell}>
-                      {reservation.username}
+                      {reservation.username || 'N/A'}
                     </TableCell>
                     <TableCell className={classes.tableCell}>
-                      {reservation.phone}
+                      {reservation.phone || 'N/A'}
                     </TableCell>
                     <TableCell className={classes.tableCell}>
-                      {reservation.startAt}
+                      {this.formatDate(reservation.date)}
                     </TableCell>
-
+                    <TableCell className={classes.tableCell}>
+                      {reservation.startAt || 'N/A'}
+                    </TableCell>
                     <TableCell className={classes.tableCell}>
                       {this.onFindAttr(reservation.movieId, movies, 'title')}
                     </TableCell>
@@ -98,13 +137,17 @@ class ReservationsTable extends Component {
                       {this.onFindAttr(reservation.cinemaIds, cinemas, 'name')}
                     </TableCell>
                     <TableCell className={classes.tableCell}>
-                      {reservation.ticketPrice}
+                      {this.formatCurrency(reservation.ticketPrice)}
                     </TableCell>
                     <TableCell className={classes.tableCell}>
-                      {reservation.total}
+                      {this.formatCurrency(reservation.total)}
                     </TableCell>
                     <TableCell className={classes.tableCell}>
-                      {reservation.checkin ? 'yes' : 'no'}
+                      <Typography
+                        variant="body2"
+                        color={reservation.checkin ? 'primary' : 'textSecondary'}>
+                        {reservation.checkin ? 'Yes' : 'No'}
+                      </Typography>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -1,24 +1,37 @@
 export default theme => ({
-  root: {},
-  title: { marginLeft: theme.spacing(3) },
+  root: {
+    padding: theme.spacing(2)
+  },
+  title: { 
+    marginBottom: theme.spacing(3),
+    color: theme.palette.text.primary
+  },
   field: {
-    margin: theme.spacing(3),
-    display: 'flex'
+    marginBottom: theme.spacing(2),
+    display: 'flex',
+    gap: theme.spacing(2)
   },
   textField: {
-    width: '100%',
-    marginRight: theme.spacing(3)
+    flex: 1,
+    minWidth: 200
   },
-  portletFooter: {
-    paddingLeft: theme.spacing(3),
-    paddingRight: theme.spacing(3),
+  buttonContainer: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: theme.spacing(1),
+    marginTop: theme.spacing(3),
     paddingTop: theme.spacing(2),
-    paddingBottom: theme.spacing(2)
+    borderTop: `1px solid ${theme.palette.divider}`
   },
   buttonFooter: {
-    margin: theme.spacing(3)
+    minWidth: 120,
+    height: 40
   },
   infoMessage: {
-    marginLeft: theme.spacing(3)
+    marginTop: theme.spacing(2),
+    padding: theme.spacing(2),
+    backgroundColor: theme.palette.info.light,
+    borderRadius: theme.shape.borderRadius,
+    color: theme.palette.info.contrastText
   }
 });

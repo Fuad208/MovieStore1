@@ -9,7 +9,18 @@ import styles from './styles';
 class ReservationsToolbar extends Component {
   static propTypes = {
     className: PropTypes.string,
-    classes: PropTypes.object.isRequired
+    classes: PropTypes.object.isRequired,
+    reservations: PropTypes.array,
+    search: PropTypes.string,
+    mode: PropTypes.string,
+    onChangeSearch: PropTypes.func.isRequired,
+    onChangeMode: PropTypes.func.isRequired
+  };
+
+  static defaultProps = {
+    reservations: [],
+    search: '',
+    mode: 'list'
   };
 
   render() {

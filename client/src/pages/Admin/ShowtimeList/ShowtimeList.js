@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
-import { withStyles, Typography } from '@material-ui/core';
+import { withStyles, Typography, CircularProgress } from '@material-ui/core';
 import styles from './styles';
 import { AddShowtime, ShowtimesToolbar, ShowtimesTable } from './components';
 import {
@@ -9,24 +9,62 @@ import {
   toggleDialog,
   selectShowtime,
   selectAllShowtimes,
-  deleteShowtime
+  deleteShowtime,
+  getMovies,
+  getCinemas
 } from '../../../store/actions';
 import { ResponsiveDialog } from '../../../components';
 
 class ShowtimeList extends Component {
   static propTypes = {
     className: PropTypes.string,
-    classes: PropTypes.object.isRequired
+    classes: PropTypes.object.isRequired,
+    showtimes: PropTypes.array,
+    selectedShowtimes: PropTypes.array,
+    openDialog: PropTypes.bool,
+    movies: PropTypes.array,
+    cinemas: PropTypes.array,
+    getShowtimes: PropTypes.func.isRequired,
+    getMovies: PropTypes.func.isRequired,
+    getCinemas: PropTypes.func.isRequired,
+    toggleDialog: PropTypes.func.isRequired,
+    selectShowtime: PropTypes.func.isRequired,
+    selectAllShowtimes: PropTypes.func.isRequired,
+    deleteShowtime: PropTypes.func.isRequired
+  };
+
+  static defaultProps = {
+    showtimes: [],
+    selectedShowtimes: [],
+    movies: [],
+    cinemas: [],
+    openDialog: false
   };
 
   componentDidMount() {
-    const { showtimes, getShowtimes } = this.props;
+    const { 
+      showtimes, 
+      movies, 
+      cinemas, 
+      getShowtimes, 
+      getMovies, 
+      getCinemas 
+    } = this.props;
+    
     if (!showtimes.length) getShowtimes();
+    if (!movies.length) getMovies();
+    if (!cinemas.length) getCinemas();
   }
 
   handleDeleteShowtime = () => {
     const { selectedShowtimes, deleteShowtime } = this.props;
-    selectedShowtimes.forEach(element => deleteShowtime(element));
+    if (selectedShowtimes.length > 0) {
+      selectedShowtimes.forEach(showtimeId => deleteShowtime(showtimeId));
+    }
+  };
+
+  handleCloseDialog = () => {
+    this.props.toggleDialog();
   };
 
   render() {
@@ -37,8 +75,12 @@ class ShowtimeList extends Component {
       openDialog,
       toggleDialog,
       selectShowtime,
-      selectAllShowtimes
+      selectAllShowtimes,
+      movies,
+      cinemas
     } = this.props;
+
+    const isLoading = !showtimes.length && !movies.length && !cinemas.length;
 
     return (
       <div className={classes.root}>
@@ -49,25 +91,35 @@ class ShowtimeList extends Component {
           deleteShowtime={this.handleDeleteShowtime}
         />
         <div className={classes.content}>
-          {!showtimes.length ? (
-            <Typography variant="h6">There are no showtimes</Typography>
+          {isLoading ? (
+            <div className={classes.progressWrapper}>
+              <CircularProgress />
+            </div>
+          ) : !showtimes.length ? (
+            <Typography variant="h6" align="center">
+              There are no showtimes available
+            </Typography>
           ) : (
             <ShowtimesTable
               onSelectShowtime={selectShowtime}
               selectedShowtimes={selectedShowtimes}
               selectAllShowtimes={selectAllShowtimes}
               showtimes={showtimes}
+              movies={movies}
+              cinemas={cinemas}
             />
           )}
         </div>
         <ResponsiveDialog
           id="Add-showtime"
           open={openDialog}
-          handleClose={() => toggleDialog()}>
+          handleClose={this.handleCloseDialog}>
           <AddShowtime
-            selectedShowtime={showtimes.find(
-              showtime => showtime._id === selectedShowtimes[0]
-            )}
+            selectedShowtime={
+              selectedShowtimes.length === 1
+                ? showtimes.find(showtime => showtime._id === selectedShowtimes[0])
+                : null
+            }
           />
         </ResponsiveDialog>
       </div>
@@ -75,14 +127,18 @@ class ShowtimeList extends Component {
   }
 }
 
-const mapStateToProps = ({ showtimeState }) => ({
-  openDialog: showtimeState.openDialog,
-  showtimes: showtimeState.showtimes,
-  selectedShowtimes: showtimeState.selectedShowtimes
+const mapStateToProps = ({ showtimeState, movieState, cinemaState }) => ({
+  openDialog: showtimeState.openDialog || false,
+  showtimes: showtimeState.showtimes || [],
+  selectedShowtimes: showtimeState.selectedShowtimes || [],
+  movies: movieState.movies || [],
+  cinemas: cinemaState.cinemas || []
 });
 
 const mapDispatchToProps = {
   getShowtimes,
+  getMovies,
+  getCinemas,
   toggleDialog,
   selectShowtime,
   selectAllShowtimes,

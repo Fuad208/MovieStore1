@@ -13,7 +13,19 @@ class ReservationList extends Component {
 
   static propTypes = {
     className: PropTypes.string,
-    classes: PropTypes.object.isRequired
+    classes: PropTypes.object.isRequired,
+    reservations: PropTypes.array.isRequired,
+    movies: PropTypes.array.isRequired,
+    cinemas: PropTypes.array.isRequired,
+    getReservations: PropTypes.func.isRequired,
+    getMovies: PropTypes.func.isRequired,
+    getCinemas: PropTypes.func.isRequired
+  };
+
+  static defaultProps = {
+    reservations: [],
+    movies: [],
+    cinemas: []
   };
 
   componentDidMount() {
@@ -40,7 +52,11 @@ class ReservationList extends Component {
     const { mode, search } = this.state;
     const { classes, reservations, movies, cinemas } = this.props;
 
-    const filteredReservations = match(search, reservations, 'phone');
+    const filteredReservations = search 
+      ? match(search, reservations, 'phone')
+      : reservations;
+
+    const isLoading = !reservations.length && !movies.length && !cinemas.length;
 
     return (
       <div className={classes.root}>
@@ -52,7 +68,7 @@ class ReservationList extends Component {
           onChangeMode={this.onChangeMode}
         />
         <div className={classes.content}>
-          {!filteredReservations.length ? (
+          {isLoading ? (
             <div className={classes.progressWrapper}>
               <CircularProgress />
             </div>
@@ -76,9 +92,9 @@ class ReservationList extends Component {
 }
 
 const mapStateToProps = ({ reservationState, movieState, cinemaState }) => ({
-  reservations: reservationState.reservations,
-  movies: movieState.movies,
-  cinemas: cinemaState.cinemas
+  reservations: reservationState.reservations || [],
+  movies: movieState.movies || [],
+  cinemas: cinemaState.cinemas || []
 });
 
 const mapDispatchToProps = {
@@ -86,6 +102,7 @@ const mapDispatchToProps = {
   getMovies,
   getCinemas
 };
+
 export default connect(
   mapStateToProps,
   mapDispatchToProps
