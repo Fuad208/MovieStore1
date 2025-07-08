@@ -8,7 +8,8 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  TablePagination
+  TablePagination,
+  Typography
 } from '@material-ui/core';
 
 import { Portlet, PortletContent } from '../../../../../components';
@@ -43,18 +44,65 @@ class ReservationsTable extends Component {
   };
 
   handleChangeRowsPerPage = event => {
-    this.setState({ rowsPerPage: event.target.value });
+    this.setState({ 
+      rowsPerPage: event.target.value,
+      page: 0 // Reset to first page when changing rows per page
+    });
   };
 
   onFindAttr = (id, list, attr) => {
+    if (!id || !Array.isArray(list)) {
+      return `Not ${attr} Found`;
+    }
+    
     const item = list.find(item => item._id === id);
     return item ? item[attr] : `Not ${attr} Found`;
+  };
+
+  formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return 'Invalid Date';
+    }
+  };
+
+  formatCurrency = (amount) => {
+    if (typeof amount !== 'number') {
+      return 'N/A';
+    }
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
   };
 
   render() {
     const { classes, className, reservations, movies, cinemas } = this.props;
     const { rowsPerPage, page } = this.state;
     const rootClassName = classNames(classes.root, className);
+
+    // Validate data
+    if (!Array.isArray(reservations) || reservations.length === 0) {
+      return (
+        <Portlet className={rootClassName}>
+          <PortletContent>
+            <Typography variant="h6" align="center" color="textSecondary">
+              No reservations found
+            </Typography>
+          </PortletContent>
+        </Portlet>
+      );
+    }
+
+    const startIndex = page * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    const paginatedReservations = reservations.slice(startIndex, endIndex);
 
     return (
       <Portlet className={rootClassName}>
@@ -71,33 +119,31 @@ class ReservationsTable extends Component {
               </TableRow>
             </TableHead>
             <TableBody>
-              {reservations
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map(reservation => (
-                  <TableRow
-                    className={classes.tableRow}
-                    hover
-                    key={reservation._id}>
-                    <TableCell className={classes.tableCell}>
-                      {this.onFindAttr(reservation.movieId, movies, 'title')}
-                    </TableCell>
-                    <TableCell className={classes.tableCell}>
-                      {this.onFindAttr(reservation.cinemaIds, cinemas, 'name')}
-                    </TableCell>
-                    <TableCell className={classes.tableCell}>
-                      {new Date(reservation.date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className={classes.tableCell}>
-                      {reservation.startAt}
-                    </TableCell>
-                    <TableCell className={classes.tableCell}>
-                      {reservation.ticketPrice}
-                    </TableCell>
-                    <TableCell className={classes.tableCell}>
-                      {reservation.total}
-                    </TableCell>
-                  </TableRow>
-                ))}
+              {paginatedReservations.map(reservation => (
+                <TableRow
+                  className={classes.tableRow}
+                  hover
+                  key={reservation._id || reservation.id}>
+                  <TableCell className={classes.tableCell}>
+                    {this.onFindAttr(reservation.movieId, movies, 'title')}
+                  </TableCell>
+                  <TableCell className={classes.tableCell}>
+                    {this.onFindAttr(reservation.cinemaId || reservation.cinemaIds, cinemas, 'name')}
+                  </TableCell>
+                  <TableCell className={classes.tableCell}>
+                    {this.formatDate(reservation.date)}
+                  </TableCell>
+                  <TableCell className={classes.tableCell}>
+                    {reservation.startAt || 'N/A'}
+                  </TableCell>
+                  <TableCell className={classes.tableCell}>
+                    {this.formatCurrency(reservation.ticketPrice)}
+                  </TableCell>
+                  <TableCell className={classes.tableCell}>
+                    {this.formatCurrency(reservation.total)}
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
           <TablePagination

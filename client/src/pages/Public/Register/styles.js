@@ -12,7 +12,7 @@ export default theme => ({
     }
   },
   bg: {
-    backgroundColor: theme.palette.common.neutral,
+    backgroundColor: theme.palette.common.neutral || theme.palette.grey[300],
     height: '100%',
     display: 'flex',
     justifyContent: 'center',
@@ -22,7 +22,6 @@ export default theme => ({
     backgroundPosition: 'center',
     opacity: 0.5
   },
-
   content: {
     height: '100%',
     display: 'flex',
@@ -32,11 +31,16 @@ export default theme => ({
     display: 'flex',
     alignItems: 'center',
     paddingTop: theme.spacing(5),
-    paddingBototm: theme.spacing(2),
+    paddingBottom: theme.spacing(2), // Fixed typo: paddingBototm -> paddingBottom
     paddingLeft: theme.spacing(2),
     paddingRight: theme.spacing(2)
   },
-  backButton: {},
+  backButton: {
+    transition: 'all 0.2s ease-in-out',
+    '&:hover': {
+      backgroundColor: theme.palette.action.hover
+    }
+  },
   logoImage: {
     marginLeft: theme.spacing(4)
   },
@@ -59,8 +63,9 @@ export default theme => ({
     }
   },
   title: {
-    color: theme.palette.common.contrastText,
-    marginTop: theme.spacing(3)
+    color: theme.palette.common.contrastText || theme.palette.text.primary,
+    marginTop: theme.spacing(3),
+    fontWeight: 600
   },
   subtitle: {
     color: theme.palette.text.secondary,
@@ -71,8 +76,13 @@ export default theme => ({
   },
   textField: {
     width: '100%',
-    '& + & ': {
+    '& + &': {
       marginTop: theme.spacing(2)
+    },
+    '& .MuiOutlinedInput-root': {
+      '&:hover fieldset': {
+        borderColor: theme.palette.primary.main
+      }
     }
   },
   upload: {
@@ -81,7 +91,8 @@ export default theme => ({
   },
   policy: {
     display: 'flex',
-    alignItems: 'center'
+    alignItems: 'center',
+    marginTop: theme.spacing(2)
   },
   policyCheckbox: {
     marginLeft: '-14px'
@@ -92,9 +103,11 @@ export default theme => ({
   },
   policyUrl: {
     color: theme.palette.text.primary,
+    textDecoration: 'none',
     '&:hover': {
       cursor: 'pointer',
-      color: theme.palette.primary.main
+      color: theme.palette.primary.main,
+      textDecoration: 'underline'
     }
   },
   progress: {
@@ -104,29 +117,51 @@ export default theme => ({
     marginRight: 'auto'
   },
   registerButton: {
-    marginTop: theme.spacing(2),
-    width: '100%'
+    marginTop: theme.spacing(3),
+    width: '100%',
+    height: '48px',
+    borderRadius: '8px',
+    textTransform: 'none',
+    fontSize: '16px',
+    fontWeight: 600,
+    transition: 'all 0.2s ease-in-out',
+    '&:hover': {
+      transform: 'translateY(-1px)',
+      boxShadow: theme.shadows[4]
+    },
+    '&:disabled': {
+      backgroundColor: theme.palette.action.disabledBackground,
+      color: theme.palette.action.disabled
+    }
   },
   login: {
-    marginTop: theme.spacing(2),
-    color: theme.palette.text.secondary
+    marginTop: theme.spacing(3),
+    color: theme.palette.text.secondary,
+    textAlign: 'center'
   },
   loginUrl: {
     color: theme.palette.primary.main,
     fontWeight: 'bold',
+    textDecoration: 'none',
     '&:hover': {
-      color: theme.palette.primary.main
+      color: theme.palette.primary.dark,
+      textDecoration: 'underline'
     }
   },
   fieldError: {
-    color: theme.palette.danger.main,
+    color: theme.palette.error.main || theme.palette.danger?.main || '#f44336',
     marginBottom: theme.spacing(2),
-    marginTop: theme.spacing(1)
+    marginTop: theme.spacing(1),
+    fontSize: '0.875rem'
   },
   submitError: {
-    color: theme.palette.danger.main,
-    alignText: 'center',
+    color: theme.palette.error.main || theme.palette.danger?.main || '#f44336',
+    textAlign: 'center',
     marginBottom: theme.spacing(1),
-    marginTop: theme.spacing(2)
+    marginTop: theme.spacing(2),
+    padding: theme.spacing(1),
+    backgroundColor: theme.palette.error.light || 'rgba(244, 67, 54, 0.1)',
+    borderRadius: '4px',
+    fontSize: '0.875rem'
   }
 });

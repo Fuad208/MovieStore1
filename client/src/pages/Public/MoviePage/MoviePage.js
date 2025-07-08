@@ -7,7 +7,10 @@ import { getMovie, onSelectMovie } from '../../../store/actions';
 
 class MoviePage extends Component {
   componentDidMount() {
-    this.props.getMovie(this.props.match.params.id);
+    const { match, getMovie } = this.props;
+    if (match && match.params && match.params.id) {
+      getMovie(match.params.id);
+    }
   }
 
   componentWillUnmount() {
@@ -15,14 +18,41 @@ class MoviePage extends Component {
   }
 
   render() {
-    const { movie } = this.props;
-    return <>{movie && <MovieBanner movie={movie} fullDescription />}</>;
+    const { movie, match } = this.props;
+    
+    // Handle loading state
+    if (!movie) {
+      return (
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+          <p>Loading movie...</p>
+        </div>
+      );
+    }
+
+    // Handle error state when movie ID doesn't match
+    if (match && match.params && match.params.id && movie.id !== match.params.id) {
+      return (
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+          <p>Loading movie...</p>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {movie && <MovieBanner movie={movie} fullDescription />}
+      </>
+    );
   }
 }
 
 MoviePage.propTypes = {
   className: PropTypes.string,
-  history: PropTypes.object.isRequired
+  history: PropTypes.object.isRequired,
+  match: PropTypes.object.isRequired,
+  movie: PropTypes.object,
+  getMovie: PropTypes.func.isRequired,
+  onSelectMovie: PropTypes.func.isRequired
 };
 
 const mapStateToProps = ({ movieState }) => ({
