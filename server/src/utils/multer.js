@@ -173,7 +173,4 @@ const upload = (uploadPath, options = {}) => {
   return fileUploadService.createUpload(uploadPath, options);
 };
 
-module.exports = {
-  upload,
-  fileUploadService
-};
+module.exports = upload; // hanya ekspor fungsi upload

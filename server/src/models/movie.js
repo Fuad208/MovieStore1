@@ -122,6 +122,6 @@ movieSchema.pre('save', function(next) {
   }
 });
 
-const Movie = mongoose.model('Movie', movieSchema);
+const Movie = mongoose.models.Movie || mongoose.model('Movie', movieSchema);
 
 module.exports = Movie;

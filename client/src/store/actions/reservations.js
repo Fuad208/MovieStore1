@@ -1,59 +1,73 @@
 import { GET_RESERVATIONS, GET_RESERVATION_SUGGESTED_SEATS } from '../types';
 import { setAlert } from './alert';
 
-// ✅ Ambil semua reservasi
 export const getReservations = () => async dispatch => {
   try {
     const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
     const url = '/reservations';
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
-    const reservations = await response.json();
-    if (response.ok) {
-      dispatch({ type: GET_RESERVATIONS, payload: reservations });
-    } else {
-      dispatch(setAlert(reservations.message || 'Gagal mengambil reservasi', 'error', 5000));
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    const reservations = await response.json();
+    dispatch({ type: GET_RESERVATIONS, payload: reservations });
   } catch (error) {
-    dispatch(setAlert(error.message || 'Kesalahan sistem saat mengambil reservasi', 'error', 5000));
+    const errorMessage = error.message || 'Failed to fetch reservations';
+    dispatch(setAlert(errorMessage, 'error', 5000));
   }
 };
 
-// ✅ Ambil saran kursi berdasarkan user
 export const getSuggestedReservationSeats = username => async dispatch => {
   try {
     const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
     const url = `/reservations/usermodeling/${username}`;
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
-    const reservationSeats = await response.json();
-    if (response.ok) {
-      dispatch({
-        type: GET_RESERVATION_SUGGESTED_SEATS,
-        payload: reservationSeats
-      });
-    } else {
-      dispatch(setAlert(reservationSeats.message || 'Gagal mengambil saran kursi', 'error', 5000));
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    const reservationSeats = await response.json();
+    dispatch({
+      type: GET_RESERVATION_SUGGESTED_SEATS,
+      payload: reservationSeats
+    });
   } catch (error) {
-    dispatch(setAlert(error.message || 'Kesalahan sistem saat mengambil saran kursi', 'error', 5000));
+    const errorMessage = error.message || 'Failed to fetch suggested seats';
+    dispatch(setAlert(errorMessage, 'error', 5000));
   }
 };
 
-// ✅ Tambah reservasi (booking)
 export const addReservation = reservation => async dispatch => {
   try {
     const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
     const url = '/reservations';
-
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -65,34 +79,39 @@ export const addReservation = reservation => async dispatch => {
 
     const resData = await response.json();
 
-    if (response.ok) {
-      const { reservation, QRCode } = resData;
-      dispatch(setAlert('Reservasi berhasil dibuat', 'success', 5000));
+    if (response.ok && resData.reservation) {
+      const { reservation: createdReservation, QRCode } = resData;
+      dispatch(setAlert('Reservation created successfully', 'success', 5000));
       return {
         status: 'success',
-        message: 'Reservasi berhasil dibuat',
-        data: { reservation, QRCode }
+        message: 'Reservation created successfully',
+        data: { reservation: createdReservation, QRCode }
       };
     } else {
-      dispatch(setAlert(resData.message || 'Gagal membuat reservasi', 'error', 5000));
+      const errorMessage = resData.message || 'Failed to create reservation';
+      dispatch(setAlert(errorMessage, 'error', 5000));
       return {
         status: 'error',
-        message: resData.message || 'Gagal membuat reservasi'
+        message: errorMessage
       };
     }
   } catch (error) {
-    dispatch(setAlert(error.message || 'Terjadi kesalahan sistem', 'error', 5000));
+    const errorMessage = error.message || 'System error occurred while creating reservation';
+    dispatch(setAlert(errorMessage, 'error', 5000));
     return {
       status: 'error',
-      message: error.message || 'Terjadi kesalahan sistem saat membuat reservasi'
+      message: errorMessage
     };
   }
 };
 
-// ✅ Perbarui reservasi
 export const updateReservation = (reservation, id) => async dispatch => {
   try {
     const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
     const url = `/reservations/${id}`;
     const response = await fetch(url, {
       method: 'PATCH',
@@ -106,28 +125,33 @@ export const updateReservation = (reservation, id) => async dispatch => {
     const resData = await response.json();
 
     if (response.ok) {
-      dispatch(setAlert('Reservasi berhasil diperbarui', 'success', 5000));
-      return { status: 'success', message: 'Reservasi berhasil diperbarui' };
+      dispatch(setAlert('Reservation updated successfully', 'success', 5000));
+      return { status: 'success', message: 'Reservation updated successfully' };
     } else {
-      dispatch(setAlert(resData.message || 'Gagal memperbarui reservasi', 'error', 5000));
+      const errorMessage = resData.message || 'Failed to update reservation';
+      dispatch(setAlert(errorMessage, 'error', 5000));
       return {
         status: 'error',
-        message: resData.message || 'Gagal memperbarui reservasi'
+        message: errorMessage
       };
     }
   } catch (error) {
-    dispatch(setAlert(error.message || 'Terjadi kesalahan sistem', 'error', 5000));
+    const errorMessage = error.message || 'System error occurred while updating reservation';
+    dispatch(setAlert(errorMessage, 'error', 5000));
     return {
       status: 'error',
-      message: error.message || 'Terjadi kesalahan saat memperbarui reservasi'
+      message: errorMessage
     };
   }
 };
 
-// ✅ Hapus reservasi
 export const removeReservation = id => async dispatch => {
   try {
     const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
     const url = `/reservations/${id}`;
     const response = await fetch(url, {
       method: 'DELETE',
@@ -137,23 +161,24 @@ export const removeReservation = id => async dispatch => {
       }
     });
 
-    const resData = await response.json();
-
-    if (response.ok) {
-      dispatch(setAlert('Reservasi berhasil dihapus', 'success', 5000));
-      return { status: 'success', message: 'Reservasi berhasil dihapus' };
-    } else {
-      dispatch(setAlert(resData.message || 'Gagal menghapus reservasi', 'error', 5000));
+    if (!response.ok) {
+      const resData = await response.json();
+      const errorMessage = resData.message || 'Failed to delete reservation';
+      dispatch(setAlert(errorMessage, 'error', 5000));
       return {
         status: 'error',
-        message: resData.message || 'Gagal menghapus reservasi'
+        message: errorMessage
       };
     }
+
+    dispatch(setAlert('Reservation deleted successfully', 'success', 5000));
+    return { status: 'success', message: 'Reservation deleted successfully' };
   } catch (error) {
-    dispatch(setAlert(error.message || 'Terjadi kesalahan sistem', 'error', 5000));
+    const errorMessage = error.message || 'System error occurred while deleting reservation';
+    dispatch(setAlert(errorMessage, 'error', 5000));
     return {
       status: 'error',
-      message: error.message || 'Terjadi kesalahan saat menghapus reservasi'
+      message: errorMessage
     };
   }
 };

@@ -169,7 +169,7 @@ reservationSchema.methods.cancel = function() {
 };
 
 // Method untuk checkin
-reservationSchema.methods.checkin = function() {
+reservationSchema.methods.performCheckin = function() {
   this.checkin = true;
   this.checkinTime = new Date();
   this.status = 'completed';
@@ -205,6 +205,6 @@ reservationSchema.virtual('seatDisplay').get(function() {
   return this.seats.map(seat => `${seat.row}${seat.number}`).join(', ');
 });
 
-const Reservation = mongoose.model('Reservation', reservationSchema);
+const Reservation = mongoose.models.Reservation || mongoose.model('Reservation', reservationSchema);
 
 module.exports = Reservation;

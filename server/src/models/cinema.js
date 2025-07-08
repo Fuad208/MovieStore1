@@ -108,6 +108,6 @@ cinemaSchema.methods.releaseSeats = function(seatNumbers) {
   this.seatsAvailable = this.seats.filter(seat => seat.available).length;
 };
 
-const Cinema = mongoose.model('Cinema', cinemaSchema);
+const Cinema = mongoose.models.Cinema || mongoose.model('Cinema', cinemaSchema);
 
 module.exports = Cinema;

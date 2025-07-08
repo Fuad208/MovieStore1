@@ -138,6 +138,6 @@ showtimeSchema.pre('save', async function(next) {
   next();
 });
 
-const Showtime = mongoose.model('Showtime', showtimeSchema);
+const Showtime = mongoose.models.Showtime || mongoose.model('Showtime', showtimeSchema);
 
 module.exports = Showtime;

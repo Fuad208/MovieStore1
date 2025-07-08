@@ -205,6 +205,7 @@ reservationSchema.virtual('seatDisplay').get(function() {
   return this.seats.map(seat => `${seat.row}${seat.number}`).join(', ');
 });
 
-const Reservation = mongoose.model('Reservation', reservationSchema);
+const Reservation = mongoose.models.Reservation || mongoose.model('Reservation', reservationSchema);
+
 
 module.exports = Reservation;

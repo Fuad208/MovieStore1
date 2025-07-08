@@ -27,7 +27,7 @@ class EmailService {
       throw new Error('Gmail credentials are not configured in environment variables');
     }
 
-    return nodemailer.createTransporter(config);
+    return nodemailer.createTransport(config);
   }
 
   /**

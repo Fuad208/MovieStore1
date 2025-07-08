@@ -14,20 +14,28 @@ export const uploadImage = (id, image) => async dispatch => {
   try {
     const data = new FormData();
     data.append('file', image);
-    const url = '/users/photo/' + id;
+    const url = `/users/photo/${id}`;
     const response = await fetch(url, {
       method: 'POST',
       body: data
     });
-    const responseData = await response.json();
-    if (response.ok) {
-      dispatch(setAlert('Image Uploaded', 'success', 5000));
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    const responseData = await response.json();
+    
     if (responseData.error) {
       dispatch(setAlert(responseData.error.message, 'error', 5000));
+    } else {
+      dispatch(setAlert('Image Uploaded', 'success', 5000));
     }
+    
+    return responseData;
   } catch (error) {
     dispatch(setAlert(error.message, 'error', 5000));
+    throw error;
   }
 };
 
@@ -40,16 +48,18 @@ export const login = (username, password) => async dispatch => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     });
+    
     const responseData = await response.json();
-    if (response.ok) {
+    
+    if (response.ok && responseData.user) {
       const { user } = responseData;
-      user && setUser(user);
+      setUser(user);
       dispatch({ type: LOGIN_SUCCESS, payload: responseData });
       dispatch(setAlert(`Welcome ${user.name}`, 'success', 5000));
-    }
-    if (responseData.error) {
+    } else {
       dispatch({ type: LOGIN_FAIL });
-      dispatch(setAlert(responseData.error.message, 'error', 5000));
+      const errorMessage = responseData.error?.message || 'Login failed';
+      dispatch(setAlert(errorMessage, 'error', 5000));
     }
   } catch (error) {
     dispatch({ type: LOGIN_FAIL });
@@ -57,9 +67,9 @@ export const login = (username, password) => async dispatch => {
   }
 };
 
-export const facebookLogin = e => async dispatch => {
+export const facebookLogin = (userData) => async dispatch => {
   try {
-    const { email, userID, name } = e;
+    const { email, userID, name } = userData;
     const options = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -69,15 +79,15 @@ export const facebookLogin = e => async dispatch => {
     const response = await fetch(url, options);
     const responseData = await response.json();
 
-    if (response.ok) {
+    if (response.ok && responseData.user) {
       const { user } = responseData;
-      user && setUser(user);
+      setUser(user);
       dispatch({ type: LOGIN_SUCCESS, payload: responseData });
       dispatch(setAlert(`Welcome ${user.name}`, 'success', 5000));
-    }
-    if (responseData.error) {
+    } else {
       dispatch({ type: LOGIN_FAIL });
-      dispatch(setAlert(responseData.error.message, 'error', 5000));
+      const errorMessage = responseData.error?.message || 'Facebook login failed';
+      dispatch(setAlert(errorMessage, 'error', 5000));
     }
   } catch (error) {
     dispatch({ type: LOGIN_FAIL });
@@ -97,15 +107,15 @@ export const googleLogin = ({ profileObj }) => async dispatch => {
     const response = await fetch(url, options);
     const responseData = await response.json();
 
-    if (response.ok) {
+    if (response.ok && responseData.user) {
       const { user } = responseData;
-      user && setUser(user);
+      setUser(user);
       dispatch({ type: LOGIN_SUCCESS, payload: responseData });
       dispatch(setAlert(`Welcome ${user.name}`, 'success', 5000));
-    }
-    if (responseData.error) {
+    } else {
       dispatch({ type: LOGIN_FAIL });
-      dispatch(setAlert(responseData.error.message, 'error', 5000));
+      const errorMessage = responseData.error?.message || 'Google login failed';
+      dispatch(setAlert(errorMessage, 'error', 5000));
     }
   } catch (error) {
     dispatch({ type: LOGIN_FAIL });
@@ -130,17 +140,28 @@ export const register = ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
+    
     const responseData = await response.json();
-    if (response.ok) {
+    
+    if (response.ok && responseData.user) {
       const { user } = responseData;
-      user && setUser(user);
-      if (image) dispatch(uploadImage(user._id, image)); // Upload image
+      setUser(user);
+      
+      // Upload image if provided
+      if (image) {
+        try {
+          await dispatch(uploadImage(user._id, image));
+        } catch (imageError) {
+          console.error('Image upload failed:', imageError);
+        }
+      }
+      
       dispatch({ type: REGISTER_SUCCESS, payload: responseData });
-      dispatch(setAlert('Register Success', 'success', 5000));
-    }
-    if (responseData._message) {
+      dispatch(setAlert('Registration successful', 'success', 5000));
+    } else {
       dispatch({ type: REGISTER_FAIL });
-      dispatch(setAlert(responseData.message, 'error', 5000));
+      const errorMessage = responseData.message || responseData.error?.message || 'Registration failed';
+      dispatch(setAlert(errorMessage, 'error', 5000));
     }
   } catch (error) {
     dispatch({ type: REGISTER_FAIL });
@@ -151,19 +172,23 @@ export const register = ({
 // Load user
 export const loadUser = () => async dispatch => {
   if (!isLoggedIn()) return;
+  
   try {
     const url = '/users/me';
     const response = await fetch(url, {
       method: 'GET',
       headers: setAuthHeaders()
     });
+    
     const responseData = await response.json();
-    if (response.ok) {
+    
+    if (response.ok && responseData.user) {
       const { user } = responseData;
-      user && setUser(user);
+      setUser(user);
       dispatch({ type: USER_LOADED, payload: responseData });
+    } else {
+      dispatch({ type: AUTH_ERROR });
     }
-    if (!response.ok) dispatch({ type: AUTH_ERROR });
   } catch (error) {
     dispatch({ type: AUTH_ERROR });
   }
@@ -181,16 +206,20 @@ export const logout = () => async dispatch => {
         'Content-Type': 'application/json'
       }
     });
-    const responseData = await response.json();
+    
     if (response.ok) {
       removeUser();
       dispatch({ type: LOGOUT });
-      dispatch(setAlert('LOGOUT Success', 'success', 5000));
-    }
-    if (responseData.error) {
-      dispatch(setAlert(responseData.error.message, 'error', 5000));
+      dispatch(setAlert('Logout successful', 'success', 5000));
+    } else {
+      const responseData = await response.json();
+      const errorMessage = responseData.error?.message || 'Logout failed';
+      dispatch(setAlert(errorMessage, 'error', 5000));
     }
   } catch (error) {
-    dispatch(setAlert(error.message, 'error', 5000));
+    // Even if logout fails on server, clean up local state
+    removeUser();
+    dispatch({ type: LOGOUT });
+    dispatch(setAlert('Logged out locally', 'warning', 5000));
   }
 };

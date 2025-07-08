@@ -5,20 +5,28 @@ export const uploadCinemaImage = (id, image) => async dispatch => {
   try {
     const data = new FormData();
     data.append('file', image);
-    const url = '/cinemas/photo/' + id;
+    const url = `/cinemas/photo/${id}`;
     const response = await fetch(url, {
       method: 'POST',
       body: data
     });
-    const responseData = await response.json();
-    if (response.ok) {
-      dispatch(setAlert('Image Uploaded', 'success', 5000));
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    const responseData = await response.json();
+    
     if (responseData.error) {
       dispatch(setAlert(responseData.error.message, 'error', 5000));
+    } else {
+      dispatch(setAlert('Image Uploaded', 'success', 5000));
     }
+    
+    return responseData;
   } catch (error) {
     dispatch(setAlert(error.message, 'error', 5000));
+    throw error;
   }
 };
 
@@ -29,10 +37,13 @@ export const getCinemas = () => async dispatch => {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });
-    const cinemas = await response.json();
-    if (response.ok) {
-      dispatch({ type: GET_CINEMAS, payload: cinemas });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    const cinemas = await response.json();
+    dispatch({ type: GET_CINEMAS, payload: cinemas });
   } catch (error) {
     dispatch(setAlert(error.message, 'error', 5000));
   }
@@ -40,15 +51,18 @@ export const getCinemas = () => async dispatch => {
 
 export const getCinema = id => async dispatch => {
   try {
-    const url = '/cinemas/' + id;
+    const url = `/cinemas/${id}`;
     const response = await fetch(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });
-    const cinema = await response.json();
-    if (response.ok) {
-      dispatch({ type: GET_CINEMA, payload: cinema });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    const cinema = await response.json();
+    dispatch({ type: GET_CINEMA, payload: cinema });
   } catch (error) {
     dispatch(setAlert(error.message, 'error', 5000));
   }
@@ -57,6 +71,10 @@ export const getCinema = id => async dispatch => {
 export const createCinemas = (image, newCinema) => async dispatch => {
   try {
     const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
     const url = '/cinemas';
     const response = await fetch(url, {
       method: 'POST',
@@ -66,18 +84,30 @@ export const createCinemas = (image, newCinema) => async dispatch => {
       },
       body: JSON.stringify(newCinema)
     });
-    const cinema = await response.json();
-    if (response.ok) {
-      dispatch(setAlert('Cinema Created', 'success', 5000));
-      if (image) dispatch(uploadCinemaImage(cinema._id, image));
-      dispatch(getCinemas());
-      return { status: 'success', message: 'Cinema Created' };
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    const cinema = await response.json();
+    dispatch(setAlert('Cinema Created', 'success', 5000));
+    
+    // Upload image if provided
+    if (image) {
+      try {
+        await dispatch(uploadCinemaImage(cinema._id, image));
+      } catch (imageError) {
+        console.error('Image upload failed:', imageError);
+      }
+    }
+    
+    dispatch(getCinemas());
+    return { status: 'success', message: 'Cinema Created' };
   } catch (error) {
     dispatch(setAlert(error.message, 'error', 5000));
     return {
       status: 'error',
-      message: ' Cinema have not been saved, try again.'
+      message: 'Cinema could not be created, please try again.'
     };
   }
 };
@@ -85,7 +115,11 @@ export const createCinemas = (image, newCinema) => async dispatch => {
 export const updateCinemas = (image, cinema, id) => async dispatch => {
   try {
     const token = localStorage.getItem('jwtToken');
-    const url = '/cinemas/' + id;
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    const url = `/cinemas/${id}`;
     const response = await fetch(url, {
       method: 'PATCH',
       headers: {
@@ -94,16 +128,28 @@ export const updateCinemas = (image, cinema, id) => async dispatch => {
       },
       body: JSON.stringify(cinema)
     });
-    if (response.ok) {
-      dispatch(setAlert('Cinema Updated', 'success', 5000));
-      if (image) dispatch(uploadCinemaImage(id, image));
-      return { status: 'success', message: 'Cinema Updated' };
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    dispatch(setAlert('Cinema Updated', 'success', 5000));
+    
+    // Upload image if provided
+    if (image) {
+      try {
+        await dispatch(uploadCinemaImage(id, image));
+      } catch (imageError) {
+        console.error('Image upload failed:', imageError);
+      }
+    }
+    
+    return { status: 'success', message: 'Cinema Updated' };
   } catch (error) {
     dispatch(setAlert(error.message, 'error', 5000));
     return {
       status: 'error',
-      message: ' Cinema have not been updated, try again.'
+      message: 'Cinema could not be updated, please try again.'
     };
   }
 };
@@ -111,7 +157,11 @@ export const updateCinemas = (image, cinema, id) => async dispatch => {
 export const removeCinemas = id => async dispatch => {
   try {
     const token = localStorage.getItem('jwtToken');
-    const url = '/cinemas/' + id;
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    const url = `/cinemas/${id}`;
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {
@@ -119,30 +169,36 @@ export const removeCinemas = id => async dispatch => {
         'Content-Type': 'application/json'
       }
     });
-    if (response.ok) {
-      dispatch(setAlert('Cinema Deleted', 'success', 5000));
-      return { status: 'success', message: 'Cinema Removed' };
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    dispatch(setAlert('Cinema Deleted', 'success', 5000));
+    return { status: 'success', message: 'Cinema Removed' };
   } catch (error) {
     dispatch(setAlert(error.message, 'error', 5000));
     return {
       status: 'error',
-      message: ' Cinema have not been deleted, try again.'
+      message: 'Cinema could not be deleted, please try again.'
     };
   }
 };
 
 export const getCinemasUserModeling = username => async dispatch => {
   try {
-    const url = '/cinemas/usermodeling/' + username;
+    const url = `/cinemas/usermodeling/${username}`;
     const response = await fetch(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });
-    const cinemas = await response.json();
-    if (response.ok) {
-      dispatch({ type: GET_CINEMAS, payload: cinemas });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    const cinemas = await response.json();
+    dispatch({ type: GET_CINEMAS, payload: cinemas });
   } catch (error) {
     dispatch(setAlert(error.message, 'error', 5000));
   }
