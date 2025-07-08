@@ -1,214 +1,242 @@
-import { GET_MOVIES, SELECT_MOVIE, GET_SUGGESTIONS } from '../types';
+import {
+  GET_MOVIES,
+  GET_MOVIES_SUCCESS,
+  GET_MOVIES_FAILURE,
+  SELECT_MOVIE,
+  GET_SUGGESTIONS,
+  GET_SUGGESTIONS_SUCCESS,
+  GET_SUGGESTIONS_FAILURE,
+  ADD_MOVIE,
+  UPDATE_MOVIE,
+  DELETE_MOVIE,
+  CLEAR_SELECTED_MOVIE,
+  SET_LOADING,
+  FILTER_MOVIES,
+  CLEAR_MOVIE_FILTERS
+} from '../types';
 import { setAlert } from './alert';
 
-export const uploadMovieImage = (id, image) => async dispatch => {
-  try {
-    const token = localStorage.getItem('jwtToken');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    
-    const data = new FormData();
-    data.append('file', image);
-    const url = `/movies/photo/${id}`;
+// Base URL for API calls
+const BASE_URL = process.env.REACT_APP_API_URL || '';
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
-      body: data
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const responseData = await response.json();
-    
-    if (responseData.error) {
-      dispatch(setAlert(responseData.error.message, 'error', 5000));
-    } else {
-      dispatch(setAlert('Movie image uploaded successfully', 'success', 5000));
-    }
-    
-    return responseData;
-  } catch (error) {
-    dispatch(setAlert(error.message, 'error', 5000));
-    throw error;
-  }
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('jwtToken');
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
 };
 
-export const getMovies = () => async dispatch => {
-  try {
-    const url = '/movies';
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const movies = await response.json();
-    dispatch({ type: GET_MOVIES, payload: movies });
-  } catch (error) {
-    dispatch(setAlert(error.message, 'error', 5000));
+// Helper function to handle API responses
+const handleResponse = async (response) => {
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
   }
+  return response.json();
 };
 
-export const onSelectMovie = movie => ({
+// Action creators
+export const selectMovie = (movie) => ({
   type: SELECT_MOVIE,
   payload: movie
 });
 
-export const getMovie = id => async dispatch => {
+export const clearSelectedMovie = () => ({
+  type: CLEAR_SELECTED_MOVIE
+});
+
+export const filterMovies = (filters) => ({
+  type: FILTER_MOVIES,
+  payload: filters
+});
+
+export const clearMovieFilters = () => ({
+  type: CLEAR_MOVIE_FILTERS
+});
+
+export const getMovies = (page = 1, limit = 10, filters = {}) => async (dispatch) => {
+  dispatch({ type: SET_LOADING, payload: true });
+  
   try {
-    const url = `/movies/${id}`;
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
+    // Build query parameters
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...filters
     });
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    const response = await fetch(`${BASE_URL}/movies?${queryParams}`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
     
-    const movie = await response.json();
-    dispatch({ type: SELECT_MOVIE, payload: movie });
+    const data = await handleResponse(response);
+    dispatch({ type: GET_MOVIES_SUCCESS, payload: data });
   } catch (error) {
+    dispatch({ type: GET_MOVIES_FAILURE, payload: error.message });
     dispatch(setAlert(error.message, 'error', 5000));
+  } finally {
+    dispatch({ type: SET_LOADING, payload: false });
   }
 };
 
-export const getMovieSuggestion = id => async dispatch => {
+export const getMovie = (id) => async (dispatch) => {
+  dispatch({ type: SET_LOADING, payload: true });
+  
   try {
-    const url = `/movies/usermodeling/${id}`;
-    const response = await fetch(url, {
+    const response = await fetch(`${BASE_URL}/movies/${id}`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
+      headers: getAuthHeaders()
     });
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const movies = await response.json();
-    dispatch({ type: GET_SUGGESTIONS, payload: movies });
+    const movie = await handleResponse(response);
+    dispatch(selectMovie(movie));
   } catch (error) {
     dispatch(setAlert(error.message, 'error', 5000));
+  } finally {
+    dispatch({ type: SET_LOADING, payload: false });
   }
 };
 
-export const addMovie = (image, newMovie) => async dispatch => {
+export const addMovie = (movie) => async (dispatch) => {
+  dispatch({ type: SET_LOADING, payload: true });
+  
   try {
-    const token = localStorage.getItem('jwtToken');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    
-    const url = '/movies';
-    const response = await fetch(url, {
+    const response = await fetch(`${BASE_URL}/movies`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(newMovie)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const movie = await response.json();
-    dispatch(setAlert('Movie has been saved successfully', 'success', 5000));
-    
-    // Upload image if provided
-    if (image) {
-      try {
-        await dispatch(uploadMovieImage(movie._id, image));
-      } catch (imageError) {
-        console.error('Image upload failed:', imageError);
-      }
-    }
-    
-    dispatch(getMovies());
-    return { status: 'success', message: 'Movie created successfully' };
-  } catch (error) {
-    dispatch(setAlert(error.message, 'error', 5000));
-    return { status: 'error', message: 'Failed to create movie' };
-  }
-};
-
-export const updateMovie = (movieId, movie, image) => async dispatch => {
-  try {
-    const token = localStorage.getItem('jwtToken');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    
-    const url = `/movies/${movieId}`;
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(movie)
     });
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    const newMovie = await handleResponse(response);
+    dispatch({ type: ADD_MOVIE, payload: newMovie });
+    dispatch(setAlert('Movie created successfully', 'success', 5000));
     
-    dispatch(onSelectMovie(null));
-    dispatch(setAlert('Movie has been updated successfully', 'success', 5000));
-    
-    // Upload image if provided
-    if (image) {
-      try {
-        await dispatch(uploadMovieImage(movieId, image));
-      } catch (imageError) {
-        console.error('Image upload failed:', imageError);
-      }
-    }
-    
-    dispatch(getMovies());
-    return { status: 'success', message: 'Movie updated successfully' };
+    return { status: 'success', message: 'Movie created successfully', data: newMovie };
   } catch (error) {
     dispatch(setAlert(error.message, 'error', 5000));
-    return { status: 'error', message: 'Failed to update movie' };
+    return {
+      status: 'error',
+      message: error.message || 'Failed to create movie. Please try again.'
+    };
+  } finally {
+    dispatch({ type: SET_LOADING, payload: false });
   }
 };
 
-export const removeMovie = movieId => async dispatch => {
+export const updateMovie = (movie, id) => async (dispatch) => {
+  dispatch({ type: SET_LOADING, payload: true });
+  
   try {
-    const token = localStorage.getItem('jwtToken');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    
-    const url = `/movies/${movieId}`;
-    const response = await fetch(url, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+    const response = await fetch(`${BASE_URL}/movies/${id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(movie)
     });
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    const updatedMovie = await handleResponse(response);
+    dispatch({ type: UPDATE_MOVIE, payload: updatedMovie });
+    dispatch(setAlert('Movie updated successfully', 'success', 5000));
     
-    dispatch(getMovies());
-    dispatch(onSelectMovie(null));
-    dispatch(setAlert('Movie has been deleted successfully', 'success', 5000));
+    return { status: 'success', message: 'Movie updated successfully', data: updatedMovie };
+  } catch (error) {
+    dispatch(setAlert(error.message, 'error', 5000));
+    return {
+      status: 'error',
+      message: error.message || 'Failed to update movie. Please try again.'
+    };
+  } finally {
+    dispatch({ type: SET_LOADING, payload: false });
+  }
+};
+
+export const deleteMovie = (id) => async (dispatch) => {
+  dispatch({ type: SET_LOADING, payload: true });
+  
+  try {
+    const response = await fetch(`${BASE_URL}/movies/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    
+    await handleResponse(response);
+    dispatch({ type: DELETE_MOVIE, payload: id });
+    dispatch(setAlert('Movie deleted successfully', 'success', 5000));
+    
     return { status: 'success', message: 'Movie deleted successfully' };
   } catch (error) {
     dispatch(setAlert(error.message, 'error', 5000));
-    return { status: 'error', message: 'Failed to delete movie' };
+    return {
+      status: 'error',
+      message: error.message || 'Failed to delete movie. Please try again.'
+    };
+  } finally {
+    dispatch({ type: SET_LOADING, payload: false });
+  }
+};
+
+export const getMovieSuggestions = (userId, preferences = {}) => async (dispatch) => {
+  dispatch({ type: SET_LOADING, payload: true });
+  
+  try {
+    const queryParams = new URLSearchParams({
+      userId: userId.toString(),
+      ...preferences
+    });
+    
+    const response = await fetch(`${BASE_URL}/movies/suggestions?${queryParams}`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    
+    const suggestions = await handleResponse(response);
+    dispatch({ type: GET_SUGGESTIONS_SUCCESS, payload: suggestions });
+  } catch (error) {
+    dispatch({ type: GET_SUGGESTIONS_FAILURE, payload: error.message });
+    dispatch(setAlert(error.message, 'error', 5000));
+  } finally {
+    dispatch({ type: SET_LOADING, payload: false });
+  }
+};
+
+// Search movies by title or description
+export const searchMovies = (searchTerm) => async (dispatch) => {
+  dispatch({ type: SET_LOADING, payload: true });
+  
+  try {
+    const response = await fetch(`${BASE_URL}/movies/search?q=${encodeURIComponent(searchTerm)}`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    
+    const movies = await handleResponse(response);
+    dispatch({ type: GET_MOVIES_SUCCESS, payload: movies });
+  } catch (error) {
+    dispatch({ type: GET_MOVIES_FAILURE, payload: error.message });
+    dispatch(setAlert(error.message, 'error', 5000));
+  } finally {
+    dispatch({ type: SET_LOADING, payload: false });
+  }
+};
+
+// Get movies by category (nowShowing, comingSoon, latest)
+export const getMoviesByCategory = (category) => async (dispatch) => {
+  dispatch({ type: SET_LOADING, payload: true });
+  
+  try {
+    const response = await fetch(`${BASE_URL}/movies/category/${category}`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    
+    const movies = await handleResponse(response);
+    dispatch({ type: GET_MOVIES_SUCCESS, payload: movies });
+  } catch (error) {
+    dispatch({ type: GET_MOVIES_FAILURE, payload: error.message });
+    dispatch(setAlert(error.message, 'error', 5000));
+  } finally {
+    dispatch({ type: SET_LOADING, payload: false });
   }
 };
