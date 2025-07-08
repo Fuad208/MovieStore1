@@ -18,15 +18,41 @@ import { ResponsiveDialog } from '../../../components';
 class User extends Component {
   static propTypes = {
     className: PropTypes.string,
-    classes: PropTypes.object.isRequired
+    classes: PropTypes.object.isRequired,
+    users: PropTypes.array.isRequired,
+    selectedUsers: PropTypes.array.isRequired,
+    openDialog: PropTypes.bool.isRequired,
+    getUsers: PropTypes.func.isRequired,
+    deleteUser: PropTypes.func.isRequired,
+    selectUser: PropTypes.func.isRequired,
+    selectAllUsers: PropTypes.func.isRequired,
+    toggleUserDialog: PropTypes.func.isRequired,
+    addUser: PropTypes.func.isRequired,
+    updateUser: PropTypes.func.isRequired
+  };
+
+  static defaultProps = {
+    users: [],
+    selectedUsers: [],
+    openDialog: false
   };
 
   componentDidMount() {
     this.props.getUsers();
   }
 
-  handleSelect = selectedUsers => {
-    this.setState({ selectedUsers });
+  // Perbaikan: Menghapus method handleSelect yang tidak digunakan
+  // dan menggunakan selectUser dari props
+
+  handleDeleteUser = () => {
+    const { selectedUsers, deleteUser } = this.props;
+    if (selectedUsers.length > 0) {
+      deleteUser(selectedUsers[0]);
+    }
+  };
+
+  handleCloseDialog = () => {
+    this.props.toggleUserDialog();
   };
 
   renderUsers() {
@@ -38,13 +64,14 @@ class User extends Component {
       selectAllUsers
     } = this.props;
 
-    if (!users.length) {
+    if (!users || users.length === 0) {
       return (
         <div className={classes.progressWrapper}>
           <CircularProgress />
         </div>
       );
     }
+
     return (
       <UsersTable
         onSelect={selectUser}
@@ -54,6 +81,7 @@ class User extends Component {
       />
     );
   }
+
   render() {
     const {
       classes,
@@ -62,8 +90,7 @@ class User extends Component {
       openDialog,
       toggleUserDialog,
       addUser,
-      updateUser,
-      deleteUser
+      updateUser
     } = this.props;
 
     return (
@@ -72,17 +99,21 @@ class User extends Component {
           users={users}
           selectedUsers={selectedUsers}
           toggleDialog={toggleUserDialog}
-          deleteUser={() => deleteUser(selectedUsers[0])}
+          deleteUser={this.handleDeleteUser}
         />
-        <div className={classes.content}>{this.renderUsers()}</div>
+        <div className={classes.content}>
+          {this.renderUsers()}
+        </div>
         <ResponsiveDialog
           id="Add-user"
           open={openDialog}
-          handleClose={() => toggleUserDialog()}>
+          handleClose={this.handleCloseDialog}
+        >
           <AddUser
-            selectedUser={users.find(user => user._id === selectedUsers[0])}
+            selectedUser={selectedUsers.length > 0 ? users.find(user => user._id === selectedUsers[0]) : null}
             addUser={addUser}
             updateUser={updateUser}
+            onClose={this.handleCloseDialog}
           />
         </ResponsiveDialog>
       </div>
@@ -91,10 +122,11 @@ class User extends Component {
 }
 
 const mapStateToProps = ({ userState }) => ({
-  users: userState.users,
-  selectedUsers: userState.selectedUsers,
-  openDialog: userState.openDialog
+  users: userState.users || [],
+  selectedUsers: userState.selectedUsers || [],
+  openDialog: userState.openDialog || false
 });
+
 const mapDispatchToProps = {
   getUsers,
   selectUser,
@@ -104,6 +136,7 @@ const mapDispatchToProps = {
   updateUser,
   deleteUser
 };
+
 export default connect(
   mapStateToProps,
   mapDispatchToProps
