@@ -15,7 +15,13 @@ function NextArrow(props) {
   const { currentSlide, slideCount, onClick } = props;
   const classes = useStyles({ currentSlide, slideCount });
   return (
-    <div className={classnames(classes.arrow, 'nextArrow')} onClick={onClick}>
+    <div 
+      className={classnames(classes.arrow, 'nextArrow')} 
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      aria-label="Next slide"
+    >
       <ArrowForwardIos color="inherit" fontSize="large" />
     </div>
   );
@@ -25,7 +31,13 @@ function PrevArrow(props) {
   const { currentSlide, onClick } = props;
   const classes = useStyles({ currentSlide });
   return (
-    <div className={classnames(classes.arrow, 'prevArrow')} onClick={onClick}>
+    <div 
+      className={classnames(classes.arrow, 'prevArrow')} 
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      aria-label="Previous slide"
+    >
       <ArrowBackIos color="inherit" fontSize="large" />
     </div>
   );
@@ -33,58 +45,100 @@ function PrevArrow(props) {
 
 function MovieCarousel({ carouselClass, movies = [], title, to = null }) {
   const classes = useStyles();
+  
   const settings = {
     centerMode: true,
-    infinite: true,
+    infinite: movies.length > 1,
     speed: 500,
-    slidesToShow: 2,
+    slidesToShow: Math.min(2, movies.length),
     swipeToSlide: true,
     nextArrow: <NextArrow />,
     prevArrow: <PrevArrow />,
+    autoplay: false,
+    autoplaySpeed: 3000,
+    pauseOnHover: true,
     responsive: [
       {
         breakpoint: 1600,
         settings: {
-          slidesToShow: 3
+          slidesToShow: Math.min(3, movies.length),
+          centerMode: movies.length > 3
         }
       },
       {
         breakpoint: 1250,
         settings: {
-          slidesToShow: 2
+          slidesToShow: Math.min(2, movies.length),
+          centerMode: movies.length > 2
         }
       },
       {
         breakpoint: 750,
         settings: {
-          slidesToShow: 1
+          slidesToShow: 1,
+          centerMode: movies.length > 1
         }
       }
     ]
   };
-  if (!movies.length) return null;
-  console.log('check latest',movies);
+
+  // Perbaikan: Jika tidak ada movies, tampilkan pesan
+  if (!movies || movies.length === 0) {
+    return (
+      <div className={carouselClass}>
+        <div className={classes.container}>
+          <Typography className={classes.h2} variant="h2" color="inherit">
+            {title}
+          </Typography>
+        </div>
+        <div style={{ textAlign: 'center', padding: '50px 0', color: 'white' }}>
+          <Typography variant="h6">No movies available</Typography>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={carouselClass}>
       <div className={classes.container}>
         <Typography className={classes.h2} variant="h2" color="inherit">
           {title}
         </Typography>
-        {to==null? null
-           :
+        {to && (
           <Link to={to} style={{ textDecoration: 'none' }}>
-          <Button className={classes.button} color="primary">
-            Explore All
-          </Button>
-        </Link>
-      }
+            <Button className={classes.button} color="primary">
+              Explore All
+            </Button>
+          </Link>
+        )}
       </div>
       <Slider {...settings} className={classes.slider}>
-        {movies.map((movie,i) => (
-          <MovieCardSimple key={movie._id} movie={movie} index={i} ifupcoming={title==='Coming Soon'} />
+        {movies.map((movie, i) => (
+          <div key={movie._id || i}>
+            <MovieCardSimple 
+              movie={movie} 
+              index={i} 
+              ifupcoming={title === 'Coming Soon'} 
+            />
+          </div>
         ))}
       </Slider>
     </div>
   );
 }
+
+// Perbaikan: Tambahkan PropTypes
+MovieCarousel.propTypes = {
+  carouselClass: PropTypes.string,
+  movies: PropTypes.arrayOf(PropTypes.object),
+  title: PropTypes.string.isRequired,
+  to: PropTypes.string
+};
+
+MovieCarousel.defaultProps = {
+  carouselClass: '',
+  movies: [],
+  to: null
+};
+
 export default MovieCarousel;
