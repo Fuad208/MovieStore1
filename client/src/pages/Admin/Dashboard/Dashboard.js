@@ -31,34 +31,33 @@ class Dashboard extends Component {
     this.props.getReservations();
   }
 
-  getBestMovies = (reservations, movies, total = 5) => {
-    const reservationCounter = reservations.map(reservation => ({
-      movieId: reservation.movieId,
-      count: reservations.filter(r => r.movieId === reservation.movieId).length
-    }));
+  getBestMovies = (reservations = [], movies = [], total = 5) => {
+    if (!reservations.length || !movies.length) return [];
 
-    const result = [];
-    const map = new Map();
-    for (const item of reservationCounter) {
-      if (!map.has(item.movieId)) {
-        map.set(item.movieId, true); // set any value to Map
-        result.push({
-          movieId: item.movieId,
-          count: item.count
-        });
+    // Count reservations per movie
+    const movieReservationCount = reservations.reduce((acc, reservation) => {
+      if (reservation.movieId) {
+        acc[reservation.movieId] = (acc[reservation.movieId] || 0) + 1;
       }
-    }
-    return result
+      return acc;
+    }, {});
+
+    // Convert to array and sort by count
+    const movieCounts = Object.entries(movieReservationCount)
+      .map(([movieId, count]) => ({ movieId, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, total)
-      .map(res => ({
-        movie: movies.find(movie => movie._id === res.movieId),
-        count: res.count
-      }));
+      .slice(0, total);
+
+    // Map to include movie details
+    return movieCounts.map(item => ({
+      movie: movies.find(movie => movie._id === item.movieId),
+      count: item.count
+    })).filter(item => item.movie); // Filter out items where movie is not found
   };
 
   render() {
-    const { classes, users, cinemas, movies, reservations } = this.props;
+    const { classes, users = [], cinemas = [], movies = [], reservations = [] } = this.props;
+    const bestMovies = this.getBestMovies(reservations, movies, 5);
 
     return (
       <div className={classes.root}>
@@ -76,9 +75,7 @@ class Dashboard extends Component {
             <TotalReservations reservations={reservations.length} />
           </Grid>
           <Grid item lg={8} md={12} xl={9} xs={12}>
-            <BestMovies
-              bestMovies={this.getBestMovies(reservations, movies, 5)}
-            />
+            <BestMovies bestMovies={bestMovies} />
           </Grid>
           <Grid item lg={4} md={6} xl={3} xs={12}>
             <UsersByDevice />
@@ -90,22 +87,24 @@ class Dashboard extends Component {
 }
 
 const mapStateToProps = ({
-  userState,
-  cinemaState,
-  movieState,
-  reservationState
+  userState = { users: [] },
+  cinemaState = { cinemas: [] },
+  movieState = { movies: [] },
+  reservationState = { reservations: [] }
 }) => ({
-  users: userState.users,
-  cinemas: cinemaState.cinemas,
-  movies: movieState.movies,
-  reservations: reservationState.reservations
+  users: userState.users || [],
+  cinemas: cinemaState.cinemas || [],
+  movies: movieState.movies || [],
+  reservations: reservationState.reservations || []
 });
+
 const mapDispatchToProps = {
   getUsers,
   getCinemas,
   getMovies,
   getReservations
 };
+
 export default connect(
   mapStateToProps,
   mapDispatchToProps

@@ -9,7 +9,13 @@ import { Paper } from '../../../../../components';
 const useStyles = makeStyles(theme => ({
   root: {
     maxWidth: '100%',
-    paddingBottom: theme.spacing(2)
+    paddingBottom: theme.spacing(2),
+    cursor: 'pointer',
+    transition: 'transform 0.2s ease-in-out',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: theme.shadows[4]
+    }
   },
   imageWrapper: {
     height: '200px',
@@ -17,19 +23,32 @@ const useStyles = makeStyles(theme => ({
     overflow: 'hidden',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    backgroundColor: theme.palette.grey[200]
   },
   image: {
     width: '100%',
     height: '100%',
-    'object-fit': 'cover'
+    objectFit: 'cover'
   },
-  details: { padding: theme.spacing(3) },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.palette.grey[300],
+    color: theme.palette.grey[600]
+  },
+  details: { 
+    padding: theme.spacing(3) 
+  },
   title: {
     fontSize: '18px',
     lineHeight: '21px',
-    marginTop: theme.spacing(2),
-    textTransform: 'capitalize'
+    marginTop: theme.spacing(1),
+    textTransform: 'capitalize',
+    fontWeight: 'bold'
   },
   description: {
     lineHeight: '16px',
@@ -48,38 +67,97 @@ const useStyles = makeStyles(theme => ({
     paddingLeft: theme.spacing(3)
   },
   updateIcon: {
-    color: theme.palette.text.secondary
+    color: theme.palette.text.secondary,
+    fontSize: '16px'
   },
   updateText: {
     marginLeft: theme.spacing(1),
     color: theme.palette.text.secondary
+  },
+  genre: {
+    fontSize: '12px',
+    color: theme.palette.primary.main,
+    marginTop: theme.spacing(0.5),
+    textTransform: 'uppercase'
   }
 }));
+
+// Default/placeholder images for movies
+const defaultImages = {
+  'eternals': 'https://via.placeholder.com/300x200/666666/FFFFFF?text=Eternals',
+  'spider-man': 'https://via.placeholder.com/300x200/666666/FFFFFF?text=Spider-Man',
+  'avengers': 'https://via.placeholder.com/300x200/666666/FFFFFF?text=Avengers',
+  'doctor strange': 'https://via.placeholder.com/300x200/666666/FFFFFF?text=Doctor+Strange',
+  'black panther': 'https://via.placeholder.com/300x200/666666/FFFFFF?text=Black+Panther',
+  'default': 'https://via.placeholder.com/300x200/666666/FFFFFF?text=Movie+Poster'
+};
 
 function MovieCard(props) {
   const classes = useStyles(props);
   const { className, movie } = props;
-  const images ={eternals:'https://phantom-marca.unidadeditorial.es/927e619e34b67b9e7326c9266914e6f0/crop/68x0/1311x700/resize/1320/f/jpg/assets/multimedia/imagenes/2021/08/20/16294695683527.jpg','spider man-no way home':'https://images.indianexpress.com/2021/11/spider-man-no-way-home-new-poster-1200.jpg','avengers-infinity war':'https://pyxis.nymag.com/v1/imgs/8b3/ac6/ca28ec3072fdc00a5b59a72a75a39ab61b-20-avengers-lede.rsquare.w700.jpg','doctor strange-multiverse of madness':'https://m.media-amazon.com/images/I/818x-d2qUuL.jpg','wakanda forever':'https://thumbor.forbes.com/thumbor/fit-in/1200x0/filters%3Aformat%28jpg%29/https%3A%2F%2Fblogs-images.forbes.com%2Fscottmendelson%2Ffiles%2F2017%2F10%2FDMQuyI5V4AAUHP0.jpg'};
 
+  if (!movie) {
+    return null;
+  }
 
   const rootClassName = classNames(classes.root, className);
+  
+  // Get image source with fallback
+  const getImageSource = () => {
+    if (movie.image) {
+      return movie.image;
+    }
+    
+    // Try to find a matching default image
+    const movieTitle = (movie.title || '').toLowerCase();
+    const matchingKey = Object.keys(defaultImages).find(key => 
+      key !== 'default' && movieTitle.includes(key)
+    );
+    
+    return matchingKey ? defaultImages[matchingKey] : defaultImages.default;
+  };
+
+  const handleImageError = (e) => {
+    e.target.src = defaultImages.default;
+  };
+
   return (
     <Paper className={rootClassName}>
       <div className={classes.imageWrapper}>
-       <img alt={movie.title} className={classes.image} src={movie.image} />
+        {movie.image || true ? (
+          <img 
+            alt={movie.title || 'Movie poster'} 
+            className={classes.image} 
+            src={getImageSource()}
+            onError={handleImageError}
+          />
+        ) : (
+          <div className={classes.placeholderImage}>
+            <Typography variant="body2">No Image</Typography>
+          </div>
+        )}
       </div>
+      
       <div className={classes.details}>
-        <Typography className={classes.title} variant="h4">
-          {movie.title}
+        <Typography className={classes.title} variant="h5">
+          {movie.title || 'Untitled Movie'}
         </Typography>
-        <Typography className={classes.description} variant="body1">
-          {movie.description}
+        
+        {movie.genre && (
+          <Typography className={classes.genre} variant="caption">
+            {movie.genre}
+          </Typography>
+        )}
+        
+        <Typography className={classes.description} variant="body2">
+          {movie.description || 'No description available'}
         </Typography>
       </div>
+      
       <div className={classes.stats}>
         <AccessTimeIcon className={classes.updateIcon} />
         <Typography className={classes.updateText} variant="body2">
-          {movie.duration} minutes
+          {movie.duration ? `${movie.duration} minutes` : 'Duration not specified'}
         </Typography>
       </div>
     </Paper>
@@ -87,7 +165,15 @@ function MovieCard(props) {
 }
 
 MovieCard.propTypes = {
-  movie: PropTypes.object.isRequired
+  movie: PropTypes.shape({
+    _id: PropTypes.string,
+    title: PropTypes.string,
+    description: PropTypes.string,
+    duration: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    image: PropTypes.string,
+    genre: PropTypes.string
+  }).isRequired,
+  className: PropTypes.string
 };
 
 export default MovieCard;
