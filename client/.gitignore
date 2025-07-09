@@ -1,26 +1,61 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# =======================================
+# ✅ Core Git Ignore for React Projects
+# =======================================
 
-# dependencies
+# Dependencies
 /node_modules
+
+# Build output
+/build
+
+# Testing
+/coverage
+
+# Production
 /.pnp
 .pnp.js
 
-# testing
-/coverage
-
-# production
-/build
-
-# misc
-.DS_Store
-.env.local
-.env.development
-.env.development.local
-.env.test.local
-.env.production.local
-
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# =======================================
+# 🔒 Environment Files (Sensitive Info)
+# =======================================
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+
+# Only commit .env.example (safe template)
+!.env.example
+
+# =======================================
+# 🧠 Editor & IDE Configuration
+# =======================================
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# =======================================
+# 📦 Miscellaneous
+# =======================================
+*.tgz
+package-lock.json
+yarn.lock
+
+# =======================================
+# 📊 Optional: Config/Secrets
+# =======================================
 config.json
+.secret/
