@@ -11,9 +11,7 @@ import {
   Alert
 } from '@material-ui/core';
 import { Link } from 'react-router-dom';
-import FacebookLogin from 'react-facebook-login';
 import GoogleLogin from 'react-google-login';
-import { login, facebookLogin, googleLogin } from '../../../../store/actions';
 import { history } from '../../../../utils';
 
 const useStyles = makeStyles(theme => ({
@@ -61,13 +59,6 @@ const useStyles = makeStyles(theme => ({
     '&:hover': {
       backgroundColor: '#fafafa',
       borderColor: '#de5246'
-    }
-  },
-  facebookButton: {
-    backgroundColor: '#1877f2',
-    color: '#fff',
-    '&:hover': {
-      backgroundColor: '#166fe5'
     }
   },
   divider: {
@@ -133,8 +124,7 @@ const useStyles = makeStyles(theme => ({
 
 function LoginForm(props) {
   const { 
-    login, 
-    facebookLogin, 
+    login,  
     googleLogin, 
     isAuthenticated, 
     user, 
@@ -218,13 +208,7 @@ function LoginForm(props) {
     googleLogin(response);
   };
 
-  const handleFacebookLogin = (response) => {
-    if (response.status === 'unknown') {
-      console.error('Facebook login was cancelled');
-      return;
-    }
-    facebookLogin(response);
-  };
+
 
   return (
     <form className={classes.form} onSubmit={handleSubmit}>
@@ -258,22 +242,6 @@ function LoginForm(props) {
               variant="outlined"
             >
               Continue with Google
-            </Button>
-          )}
-        />
-        
-        <FacebookLogin
-          appId={process.env.REACT_APP_FACEBOOK_APP_ID || 'your-facebook-app-id'}
-          fields="name,email,picture"
-          callback={handleFacebookLogin}
-          render={renderProps => (
-            <Button
-              className={`${classes.socialButton} ${classes.facebookButton}`}
-              onClick={renderProps.onClick}
-              disabled={isSubmitting}
-              variant="contained"
-            >
-              Continue with Facebook
             </Button>
           )}
         />
@@ -353,7 +321,6 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = {
   login,
-  facebookLogin,
   googleLogin
 };
 

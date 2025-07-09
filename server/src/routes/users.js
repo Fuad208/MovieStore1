@@ -63,31 +63,6 @@ router.post('/users/login', async (req, res) => {
   }
 });
 
-// Facebook Login
-router.post('/users/login/facebook', async (req, res) => {
-  try {
-    const { email, userID, name } = req.body;
-    const nameArray = name.split(' ');
-
-    let user = await User.findOne({ facebook: userID });
-    
-    if (!user) {
-      user = new User({
-        name,
-        username: nameArray.join('') + userID,
-        email,
-        facebook: userID,
-      });
-      await user.save();
-    }
-
-    const token = await user.generateAuthToken();
-    res.status(user.isNew ? 201 : 200).send({ user, token });
-  } catch (e) {
-    res.status(400).send({ error: e.message });
-  }
-});
-
 // Google Login
 router.post('/users/login/google', async (req, res) => {
   try {

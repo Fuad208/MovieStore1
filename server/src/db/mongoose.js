@@ -1,4 +1,3 @@
-// src/db/mongoose.js
 const mongoose = require('mongoose');
 require('dotenv').config();
 
@@ -12,7 +11,6 @@ const connectDB = async () => {
       socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
       family: 4, // Use IPv4, skip trying IPv6
       bufferCommands: false, // Disable mongoose buffering
-      bufferMaxEntries: 0 // Disable mongoose buffering
     });
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
