@@ -5,92 +5,101 @@ import {
   DELETE_USER,
   TOGGLE_USER_DIALOG,
   SELECT_USER,
-  SELECT_ALL_USERS
-} from '../types';
+  SELECT_ALL_USERS,
+  CLEAR_SELECTED_USERS
+} from '../types/users';
 
 const initialState = {
   users: [],
   selectedUsers: [],
-  openDialog: false
+  openDialog: false,
+  loading: false,
+  error: null
 };
 
-const toggleUserDialog = state => ({
-  ...state,
-  openDialog: !state.openDialog
-});
-
-const selectUser = (state, payload) => {
-  const { selectedUsers } = state;
-
-  const selectedIndex = selectedUsers.indexOf(payload);
-  let newSelected = [];
-
-  if (selectedIndex === -1) {
-    newSelected = newSelected.concat(selectedUsers, payload);
-  } else if (selectedIndex === 0) {
-    newSelected = newSelected.concat(selectedUsers.slice(1));
-  } else if (selectedIndex === selectedUsers.length - 1) {
-    newSelected = newSelected.concat(selectedUsers.slice(0, -1));
-  } else if (selectedIndex > 0) {
-    newSelected = newSelected.concat(
-      selectedUsers.slice(0, selectedIndex),
-      selectedUsers.slice(selectedIndex + 1)
-    );
+// Helper function for toggle selection logic (reusable)
+const toggleItemInArray = (array, item) => {
+  const index = array.indexOf(item);
+  
+  if (index === -1) {
+    return [...array, item];
   }
-
-  return {
-    ...state,
-    selectedUsers: newSelected
-  };
+  
+  return array.filter((_, i) => i !== index);
 };
 
-const selectAllUsers = state => ({
-  ...state,
-  selectedUsers: !state.selectedUsers.length
-    ? state.users.map(user => user._id)
-    : []
-});
-
-const getUsers = (state, payload) => ({
-  ...state,
-  users: payload
-});
-
-const addUser = (state, payload) => ({
-  ...state,
-  users: [...state.users, payload]
-});
-
-const updateUser = (state, payload) => ({
-  ...state,
-  users: [...state.users.filter(user => user._id !== payload._id), payload]
-});
-
-const deleteUser = (state, payload) => ({
-  ...state,
-  users: state.users.filter(user => user._id !== payload),
-  selectedUsers: state.selectedUsers.filter(element => element !== payload)
-});
-
-export default (state = initialState, action) => {
+const usersReducer = (state = initialState, action) => {
   const { type, payload } = action;
 
   switch (type) {
     case GET_USERS:
-      return getUsers(state, payload);
+      return {
+        ...state,
+        users: Array.isArray(payload) ? payload : [],
+        loading: false,
+        error: null
+      };
+    
     case TOGGLE_USER_DIALOG:
-      return toggleUserDialog(state);
+      return {
+        ...state,
+        openDialog: !state.openDialog
+      };
+    
     case SELECT_USER:
-      return selectUser(state, payload);
+      return {
+        ...state,
+        selectedUsers: toggleItemInArray(state.selectedUsers, payload)
+      };
+    
     case SELECT_ALL_USERS:
-      return selectAllUsers(state);
+      return {
+        ...state,
+        selectedUsers: state.selectedUsers.length === state.users.length
+          ? []
+          : state.users.map(user => user._id)
+      };
+    
     case ADD_USER:
-      return addUser(state, payload);
+      return {
+        ...state,
+        users: [...state.users, payload],
+        loading: false,
+        error: null
+      };
+    
     case UPDATE_USER:
-      return updateUser(state, payload);
+      if (!payload || !payload._id) {
+        return state;
+      }
+      
+      return {
+        ...state,
+        users: state.users.map(user => 
+          user._id === payload._id ? { ...user, ...payload } : user
+        ),
+        loading: false,
+        error: null
+      };
+    
     case DELETE_USER:
-      return deleteUser(state, payload);
+      return {
+        ...state,
+        users: state.users.filter(user => user._id !== payload),
+        selectedUsers: state.selectedUsers.filter(id => id !== payload),
+        loading: false,
+        error: null
+      };
+    
+    case CLEAR_SELECTED_USERS:
+      return {
+        ...state,
+        selectedUsers: []
+      };
+    
     default:
       return state;
   }
 };
+
+export default usersReducer;

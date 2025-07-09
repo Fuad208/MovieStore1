@@ -1,17 +1,15 @@
 import {
   SET_SELECTED_SEATS,
+  SET_SUGGESTED_SEATS,
   SET_SELECTED_CINEMA,
   SET_SELECTED_DATE,
   SET_SELECTED_TIME,
   TOGGLE_LOGIN_POPUP,
   SHOW_INVITATION_FORM,
-  RESET_CHECKOUT,
   SET_INVITATION,
-  SET_SUGGESTED_SEATS,
   SET_QR_CODE,
-  CLEAR_SELECTED_SEATS,
-  CLEAR_SUGGESTED_SEATS
-} from '../types';
+  RESET_CHECKOUT
+} from '../types/checkout';
 
 const initialState = {
   selectedSeats: [],
@@ -20,147 +18,76 @@ const initialState = {
   selectedDate: null,
   selectedTime: null,
   showLoginPopup: false,
-  showInvitation: false,
-  invitations: {},
-  QRCode: null,
+  showInvitationForm: false,
+  invitation: null,
+  qrCode: null,
   loading: false,
   error: null
 };
 
-// Helper function to check if seat exists in array
-const seatExists = (seats, targetSeat) => {
-  return seats.some(seat => 
-    seat.row === targetSeat.row && 
-    seat.number === targetSeat.number
-  );
-};
-
-const setSelectedSeats = (state, seat) => {
-  const exists = seatExists(state.selectedSeats, seat);
-  
-  return {
-    ...state,
-    selectedSeats: exists
-      ? state.selectedSeats.filter(s => 
-          !(s.row === seat.row && s.number === seat.number)
-        )
-      : [...state.selectedSeats, seat],
-    error: null
-  };
-};
-
-const setSuggestedSeats = (state, seats) => {
-  // Ensure seats is an array
-  const seatsArray = Array.isArray(seats) ? seats : [seats];
-  
-  return {
-    ...state,
-    suggestedSeats: seatsArray,
-    error: null
-  };
-};
-
-const setSelectedCinema = (state, selectedCinema) => ({
-  ...state,
-  selectedCinema,
-  error: null
-});
-
-const setSelectedDate = (state, selectedDate) => ({
-  ...state,
-  selectedDate,
-  error: null
-});
-
-const setSelectedTime = (state, selectedTime) => ({
-  ...state,
-  selectedTime,
-  error: null
-});
-
-const setInvitation = (state, event) => {
-  const { name, value } = event.target || event;
-  
-  return {
-    ...state,
-    invitations: {
-      ...state.invitations,
-      [name]: value
-    },
-    error: null
-  };
-};
-
-const setQRCode = (state, QRCode) => ({
-  ...state,
-  QRCode,
-  error: null
-});
-
-const toggleLoginPopup = (state) => ({
-  ...state,
-  showLoginPopup: !state.showLoginPopup
-});
-
-const showInvitationForm = (state) => ({
-  ...state,
-  showInvitation: !state.showInvitation
-});
-
-const clearSelectedSeats = (state) => ({
-  ...state,
-  selectedSeats: []
-});
-
-const clearSuggestedSeats = (state) => ({
-  ...state,
-  suggestedSeats: []
-});
-
-const resetCheckout = () => ({
-  ...initialState
-});
-
 const checkoutReducer = (state = initialState, action) => {
   const { type, payload } = action;
-  
+
   switch (type) {
     case SET_SELECTED_SEATS:
-      return setSelectedSeats(state, payload);
-      
+      return {
+        ...state,
+        selectedSeats: Array.isArray(payload) ? payload : []
+      };
+    
     case SET_SUGGESTED_SEATS:
-      return setSuggestedSeats(state, payload);
-      
+      return {
+        ...state,
+        suggestedSeats: Array.isArray(payload) ? payload : []
+      };
+    
     case SET_SELECTED_CINEMA:
-      return setSelectedCinema(state, payload);
-      
+      return {
+        ...state,
+        selectedCinema: payload
+      };
+    
     case SET_SELECTED_DATE:
-      return setSelectedDate(state, payload);
-      
+      return {
+        ...state,
+        selectedDate: payload
+      };
+    
     case SET_SELECTED_TIME:
-      return setSelectedTime(state, payload);
-      
-    case SET_INVITATION:
-      return setInvitation(state, payload);
-      
-    case SET_QR_CODE:
-      return setQRCode(state, payload);
-      
+      return {
+        ...state,
+        selectedTime: payload
+      };
+    
     case TOGGLE_LOGIN_POPUP:
-      return toggleLoginPopup(state);
-      
+      return {
+        ...state,
+        showLoginPopup: !state.showLoginPopup
+      };
+    
     case SHOW_INVITATION_FORM:
-      return showInvitationForm(state);
-      
-    case CLEAR_SELECTED_SEATS:
-      return clearSelectedSeats(state);
-      
-    case CLEAR_SUGGESTED_SEATS:
-      return clearSuggestedSeats(state);
-      
+      return {
+        ...state,
+        showInvitationForm: payload
+      };
+    
+    case SET_INVITATION:
+      return {
+        ...state,
+        invitation: payload
+      };
+    
+    case SET_QR_CODE:
+      return {
+        ...state,
+        qrCode: payload
+      };
+    
     case RESET_CHECKOUT:
-      return resetCheckout();
-      
+      return {
+        ...initialState
+      };
+    
     default:
       return state;
   }

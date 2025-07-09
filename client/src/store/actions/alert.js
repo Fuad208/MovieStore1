@@ -1,12 +1,19 @@
-import { v4 as uuidv4 } from 'uuid';
-import { SET_ALERT, REMOVE_ALERT } from '../types';
+import { SET_ALERT, REMOVE_ALERT } from '../types/alert';
 
-export const setAlert = (msg, alertType, timeout = 5000) => dispatch => {
-  const id = uuidv4();
+export const setAlert = (message, alertType = 'info', timeout = 5000) => dispatch => {
+  const id = Math.random().toString(36).substr(2, 9);
+  
   dispatch({
     type: SET_ALERT,
-    payload: { msg, alertType, id }
+    payload: { id, message, alertType }
   });
-
-  setTimeout(() => dispatch({ type: REMOVE_ALERT, payload: id }), timeout);
+  
+  setTimeout(() => {
+    dispatch({ type: REMOVE_ALERT, payload: id });
+  }, timeout);
 };
+
+export const removeAlert = (id) => ({
+  type: REMOVE_ALERT,
+  payload: id
+});

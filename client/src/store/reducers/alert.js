@@ -1,58 +1,28 @@
-import { SET_ALERT, REMOVE_ALERT, CLEAR_ALERTS } from '../types';
+import { SET_ALERT, REMOVE_ALERT } from '../types/alert';
 
 const initialState = {
-  alerts: [],
-  showAlert: false
+  alerts: []
 };
 
-const setAlert = (state, { payload }) => {
-  // Check if alert with same id already exists to prevent duplicates
-  const existingAlert = state.alerts.find(alert => alert.id === payload.id);
-  
-  if (existingAlert) {
-    return {
-      ...state,
-      alerts: state.alerts.map(alert => 
-        alert.id === payload.id ? payload : alert
-      ),
-      showAlert: true
-    };
-  }
-  
-  return {
-    ...state,
-    alerts: [...state.alerts, payload],
-    showAlert: true
-  };
-};
+const alertReducer = (state = initialState, action) => {
+  const { type, payload } = action;
 
-const removeAlert = (state, { payload }) => {
-  const filteredAlerts = state.alerts.filter(alert => alert.id !== payload);
-  
-  return {
-    ...state,
-    alerts: filteredAlerts,
-    showAlert: filteredAlerts.length > 0
-  };
-};
-
-const clearAlerts = (state) => ({
-  ...state,
-  alerts: [],
-  showAlert: false
-});
-
-export default function alertReducer(state = initialState, action) {
-  const { type } = action;
-  
   switch (type) {
     case SET_ALERT:
-      return setAlert(state, action);
+      return {
+        ...state,
+        alerts: [...state.alerts, payload]
+      };
+    
     case REMOVE_ALERT:
-      return removeAlert(state, action);
-    case CLEAR_ALERTS:
-      return clearAlerts(state);
+      return {
+        ...state,
+        alerts: state.alerts.filter(alert => alert.id !== payload)
+      };
+    
     default:
       return state;
   }
-}
+};
+
+export default alertReducer;

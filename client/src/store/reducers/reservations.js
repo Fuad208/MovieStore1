@@ -1,28 +1,35 @@
-import { GET_RESERVATIONS,GET_RESERVATION_SUGGESTED_SEATS } from '../types';
+import { GET_RESERVATIONS, GET_RESERVATION_SUGGESTED_SEATS } from '../types/reservations';
 
 const initialState = {
-  reservations: []
+  reservations: [],
+  suggestedSeats: [],
+  loading: false,
+  error: null
 };
 
-const getReservations = (state, payload) => ({
-  ...state,
-  reservations: payload
-});
-
-const getReservationSuggestedSeats = (state, payload) => ({
-  ...state,
-  suggestedSeats: payload
-});
-
-export default (state = initialState, action) => {
+const reservationsReducer = (state = initialState, action) => {
   const { type, payload } = action;
 
   switch (type) {
     case GET_RESERVATIONS:
-      return getReservations(state, payload);
+      return {
+        ...state,
+        reservations: Array.isArray(payload) ? payload : [],
+        loading: false,
+        error: null
+      };
+    
     case GET_RESERVATION_SUGGESTED_SEATS:
-      return getReservationSuggestedSeats(state, payload);
+      return {
+        ...state,
+        suggestedSeats: Array.isArray(payload) ? payload : [],
+        loading: false,
+        error: null
+      };
+    
     default:
       return state;
   }
 };
+
+export default reservationsReducer;

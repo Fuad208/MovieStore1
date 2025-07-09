@@ -1,20 +1,22 @@
 import { combineReducers } from 'redux';
-import alert from './alert';
-import auth from './auth';
-import users from './users';
-import movies from './movies';
-import cinemas from './cinemas';
-import reservations from './reservations';
-import showtimes from './showtimes';
-import checkout from './checkout';
+import alertReducer from './alert';
+import authReducer from './auth';
+import checkoutReducer from './checkout';
+import cinemasReducer from './cinemas';
+import moviesReducer from './movies';
+import reservationsReducer from './reservations';
+import showtimesReducer from './showtimes';
+import usersReducer from './users';
 
-export default combineReducers({
-  alertState: alert,
-  authState: auth,
-  userState: users,
-  movieState: movies,
-  cinemaState: cinemas,
-  reservationState: reservations,
-  showtimeState: showtimes,
-  checkoutState: checkout
+const rootReducer = combineReducers({
+  alert: alertReducer,
+  auth: authReducer,
+  checkout: checkoutReducer,
+  cinemas: cinemasReducer,
+  movies: moviesReducer,
+  reservations: reservationsReducer,
+  showtimes: showtimesReducer,
+  users: usersReducer
 });
+
+export default rootReducer;

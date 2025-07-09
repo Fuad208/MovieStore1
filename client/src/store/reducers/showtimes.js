@@ -3,79 +3,77 @@ import {
   TOGGLE_DIALOG,
   SELECT_SHOWTIMES,
   SELECT_ALL_SHOWTIMES,
-  DELETE_SHOWTIME
-} from '../types';
+  DELETE_SHOWTIME,
+  CLEAR_SELECTED_SHOWTIMES
+} from '../types/showtimes';
 
 const initialState = {
   showtimes: [],
   selectedShowtimes: [],
-  openDialog: false
+  openDialog: false,
+  loading: false,
+  error: null
 };
 
-const getShowtimes = (state, payload) => ({
-  ...state,
-  showtimes: payload
-});
-
-const toggleDialog = state => ({
-  ...state,
-  openDialog: !state.openDialog
-});
-
-const selectShowtime = (state, payload) => {
-  const { selectedShowtimes } = state;
-
-  const selectedIndex = selectedShowtimes.indexOf(payload);
-  let newSelected = [];
-
-  if (selectedIndex === -1) {
-    newSelected = newSelected.concat(selectedShowtimes, payload);
-  } else if (selectedIndex === 0) {
-    newSelected = newSelected.concat(selectedShowtimes.slice(1));
-  } else if (selectedIndex === selectedShowtimes.length - 1) {
-    newSelected = newSelected.concat(selectedShowtimes.slice(0, -1));
-  } else if (selectedIndex > 0) {
-    newSelected = newSelected.concat(
-      selectedShowtimes.slice(0, selectedIndex),
-      selectedShowtimes.slice(selectedIndex + 1)
-    );
+// Helper function for toggle selection logic
+const toggleItemInArray = (array, item) => {
+  const index = array.indexOf(item);
+  
+  if (index === -1) {
+    return [...array, item];
   }
-
-  return {
-    ...state,
-    selectedShowtimes: newSelected
-  };
+  
+  return array.filter((_, i) => i !== index);
 };
 
-const selectAllShowtimes = state => ({
-  ...state,
-  selectedShowtimes: !state.selectedShowtimes.length
-    ? state.showtimes.map(showtime => showtime._id)
-    : []
-});
-
-const deleteShowtime = (state, payload) => ({
-  ...state,
-  selectedShowtimes: state.selectedShowtimes.filter(
-    element => element !== payload
-  )
-});
-
-export default (state = initialState, action) => {
+const showtimesReducer = (state = initialState, action) => {
   const { type, payload } = action;
 
   switch (type) {
     case GET_SHOWTIMES:
-      return getShowtimes(state, payload);
+      return {
+        ...state,
+        showtimes: Array.isArray(payload) ? payload : [],
+        loading: false,
+        error: null
+      };
+    
     case TOGGLE_DIALOG:
-      return toggleDialog(state);
+      return {
+        ...state,
+        openDialog: !state.openDialog
+      };
+    
     case SELECT_SHOWTIMES:
-      return selectShowtime(state, payload);
+      return {
+        ...state,
+        selectedShowtimes: toggleItemInArray(state.selectedShowtimes, payload)
+      };
+    
     case SELECT_ALL_SHOWTIMES:
-      return selectAllShowtimes(state);
+      return {
+        ...state,
+        selectedShowtimes: state.selectedShowtimes.length === state.showtimes.length
+          ? []
+          : state.showtimes.map(showtime => showtime._id)
+      };
+    
     case DELETE_SHOWTIME:
-      return deleteShowtime(state, payload);
+      return {
+        ...state,
+        showtimes: state.showtimes.filter(showtime => showtime._id !== payload),
+        selectedShowtimes: state.selectedShowtimes.filter(id => id !== payload)
+      };
+    
+    case CLEAR_SELECTED_SHOWTIMES:
+      return {
+        ...state,
+        selectedShowtimes: []
+      };
+    
     default:
       return state;
   }
 };
+
+export default showtimesReducer;

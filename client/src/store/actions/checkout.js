@@ -1,53 +1,60 @@
 import {
   SET_SELECTED_SEATS,
+  SET_SUGGESTED_SEATS,
   SET_SELECTED_CINEMA,
   SET_SELECTED_DATE,
   SET_SELECTED_TIME,
-  SET_INVITATION,
   TOGGLE_LOGIN_POPUP,
   SHOW_INVITATION_FORM,
-  RESET_CHECKOUT,
-  SET_SUGGESTED_SEATS,
-  SET_QR_CODE
-} from '../types';
+  SET_INVITATION,
+  SET_QR_CODE,
+  RESET_CHECKOUT
+} from '../types/checkout';
 
-export const setSelectedSeats = seats => ({
+export const setSelectedSeats = (seats) => ({
   type: SET_SELECTED_SEATS,
   payload: seats
 });
 
-export const setSuggestedSeats = seats => ({
+export const setSuggestedSeats = (seats) => ({
   type: SET_SUGGESTED_SEATS,
   payload: seats
 });
 
-export const setSelectedCinema = cinema => ({
+export const setSelectedCinema = (cinema) => ({
   type: SET_SELECTED_CINEMA,
   payload: cinema
 });
 
-export const setSelectedDate = date => ({
+export const setSelectedDate = (date) => ({
   type: SET_SELECTED_DATE,
   payload: date
 });
 
-export const setSelectedTime = time => ({
+export const setSelectedTime = (time) => ({
   type: SET_SELECTED_TIME,
   payload: time
 });
 
-export const setInvitation = event => ({
+export const toggleLoginPopup = () => ({
+  type: TOGGLE_LOGIN_POPUP
+});
+
+export const showInvitationForm = (show) => ({
+  type: SHOW_INVITATION_FORM,
+  payload: show
+});
+
+export const setInvitation = (invitation) => ({
   type: SET_INVITATION,
-  payload: event
+  payload: invitation
 });
 
-export const setQRCode = QRCode => ({
+export const setQRCode = (qrCode) => ({
   type: SET_QR_CODE,
-  payload: QRCode
+  payload: qrCode
 });
 
-export const toggleLoginPopup = () => ({ type: TOGGLE_LOGIN_POPUP });
-
-export const showInvitationForm = () => ({ type: SHOW_INVITATION_FORM });
-
-export const resetCheckout = () => ({ type: RESET_CHECKOUT });
+export const resetCheckout = () => ({
+  type: RESET_CHECKOUT
+});
