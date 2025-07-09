@@ -1,2 +1,9 @@
-export const SET_ALERT = 'SET_ALERT';
-export const REMOVE_ALERT = 'REMOVE_ALERT';
+export const ALERT_TYPES = {
+  SET_ALERT: 'SET_ALERT',
+  REMOVE_ALERT: 'REMOVE_ALERT',
+  CLEAR_ALL_ALERTS: 'CLEAR_ALL_ALERTS'
+};
+
+// For backward compatibility
+export const SET_ALERT = ALERT_TYPES.SET_ALERT;
+export const REMOVE_ALERT = ALERT_TYPES.REMOVE_ALERT;
