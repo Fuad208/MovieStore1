@@ -1,210 +1,337 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const { Schema } = mongoose;
 
-const seatReservationSchema = new Schema({
-  row: {
-    type: String,
-    required: true,
-    trim: true,
-    uppercase: true
-  },
-  number: {
-    type: Number,
-    required: true,
-    min: 1
-  }
-}, { _id: false });
-
-const reservationSchema = new Schema({
-  reservationNumber: {
-    type: String,
-    unique: true,
-    required: true,
-    default: function() {
-      return 'RES' + Date.now() + Math.floor(Math.random() * 1000);
-    }
-  },
-  date: {
-    type: Date,
-    required: true,
-    validate: {
-      validator: function(v) {
-        return v instanceof Date && !isNaN(v);
-      },
-      message: 'Date must be a valid date'
-    }
-  },
-  startAt: {
-    type: String,
-    required: true,
-    trim: true,
-    validate: {
-      validator: function(v) {
-        // Validasi format waktu HH:MM
-        return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-      },
-      message: 'Start time must be in HH:MM format'
-    }
-  },
-  seats: {
-    type: [seatReservationSchema],
-    required: true,
-    validate: {
-      validator: function(v) {
-        return v && v.length > 0;
-      },
-      message: 'At least one seat must be selected'
-    }
-  },
-  ticketPrice: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  total: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  movieId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Movie',
-    required: true
-  },
-  cinemaId: { // Perbaiki nama field dari cinemaIds ke cinemaId
-    type: Schema.Types.ObjectId,
-    ref: 'Cinema',
-    required: true
-  },
-  showtimeId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Showtime',
-    required: true
-  },
-  userId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
+const userSchema = new Schema({
   username: {
     type: String,
     required: true,
-    trim: true
+    unique: true,
+    trim: true,
+    minlength: 3,
+    maxlength: 30,
+    match: /^[a-zA-Z0-9_]+$/
   },
   email: {
     type: String,
     required: true,
+    unique: true,
     trim: true,
-    lowercase: true
+    lowercase: true,
+    match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  },
+  password: {
+    type: String,
+    required: true,
+    minlength: 6,
+    select: false // Don't include password in queries by default
+  },
+  firstName: {
+    type: String,
+    required: true,
+    trim: true,
+    minlength: 1,
+    maxlength: 50
+  },
+  lastName: {
+    type: String,
+    required: true,
+    trim: true,
+    minlength: 1,
+    maxlength: 50
   },
   phone: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    match: /^[\+]?[0-9\s\-\(\)]+$/
   },
-  status: {
+  dateOfBirth: {
+    type: Date,
+    validate: {
+      validator: function(v) {
+        return !v || (v instanceof Date && !isNaN(v) && v < new Date());
+      },
+      message: 'Date of birth must be a valid date in the past'
+    }
+  },
+  gender: {
     type: String,
-    enum: ['pending', 'confirmed', 'cancelled', 'completed'],
-    default: 'pending'
+    enum: ['male', 'female', 'other'],
+    lowercase: true
   },
-  checkin: {
+  avatar: {
+    type: String,
+    default: '',
+    validate: {
+      validator: function(v) {
+        return !v || /^https?:\/\/.+/.test(v);
+      },
+      message: 'Avatar must be a valid URL'
+    }
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'manager'],
+    default: 'user'
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  isEmailVerified: {
     type: Boolean,
     default: false
   },
-  checkinTime: {
+  emailVerificationToken: {
+    type: String,
+    select: false
+  },
+  emailVerificationExpires: {
+    type: Date,
+    select: false
+  },
+  passwordResetToken: {
+    type: String,
+    select: false
+  },
+  passwordResetExpires: {
+    type: Date,
+    select: false
+  },
+  lastLogin: {
     type: Date
   },
-  paymentMethod: {
-    type: String,
-    enum: ['cash', 'card', 'digital_wallet', 'bank_transfer'],
-    default: 'cash'
+  preferences: {
+    language: {
+      type: String,
+      default: 'en'
+    },
+    timezone: {
+      type: String,
+      default: 'UTC'
+    },
+    notifications: {
+      email: {
+        type: Boolean,
+        default: true
+      },
+      sms: {
+        type: Boolean,
+        default: false
+      },
+      push: {
+        type: Boolean,
+        default: true
+      }
+    },
+    favoriteGenres: [{
+      type: String,
+      trim: true
+    }]
   },
-  paymentStatus: {
-    type: String,
-    enum: ['pending', 'paid', 'refunded', 'failed'],
-    default: 'pending'
+  loyaltyPoints: {
+    type: Number,
+    default: 0,
+    min: 0
   },
-  notes: {
-    type: String,
-    trim: true
+  totalSpent: {
+    type: Number,
+    default: 0,
+    min: 0
   },
-  // Untuk tracking expiry time reservasi
-  expiresAt: {
-    type: Date,
-    default: function() {
-      // Reservasi expired dalam 15 menit jika tidak dikonfirmasi
-      return new Date(Date.now() + 15 * 60 * 1000);
+  reservationCount: {
+    type: Number,
+    default: 0,
+    min: 0
+  }
+}, { 
+  timestamps: true,
+  toJSON: { 
+    virtuals: true,
+    transform: function(doc, ret) {
+      delete ret.password;
+      delete ret.passwordResetToken;
+      delete ret.passwordResetExpires;
+      delete ret.emailVerificationToken;
+      delete ret.emailVerificationExpires;
+      return ret;
     }
-  }
-}, { timestamps: true });
-
-// Index untuk query yang sering digunakan
-reservationSchema.index({ reservationNumber: 1 });
-reservationSchema.index({ userId: 1 });
-reservationSchema.index({ movieId: 1, cinemaId: 1, date: 1 });
-reservationSchema.index({ status: 1 });
-reservationSchema.index({ expiresAt: 1 });
-
-// Pre-save middleware untuk calculate total
-reservationSchema.pre('save', function(next) {
-  if (this.isModified('seats') || this.isModified('ticketPrice')) {
-    this.total = this.seats.length * this.ticketPrice;
-  }
-  next();
+  },
+  toObject: { virtuals: true }
 });
 
-// Method untuk confirm reservation
-reservationSchema.methods.confirm = function() {
-  this.status = 'confirmed';
-  this.paymentStatus = 'paid';
-  this.expiresAt = undefined; // Remove expiry when confirmed
-  return this.save();
-};
+// Indexes for better performance
+userSchema.index({ email: 1 });
+userSchema.index({ username: 1 });
+userSchema.index({ role: 1 });
+userSchema.index({ isActive: 1 });
+userSchema.index({ createdAt: 1 });
 
-// Method untuk cancel reservation
-reservationSchema.methods.cancel = function() {
-  this.status = 'cancelled';
-  return this.save();
-};
+// Virtual for full name
+userSchema.virtual('fullName').get(function() {
+  return `${this.firstName} ${this.lastName}`;
+});
 
-// Method untuk checkin
-reservationSchema.methods.performCheckin = function() {
-  this.checkin = true;
-  this.checkinTime = new Date();
-  this.status = 'completed';
-  return this.save();
-};
-
-// Method untuk check if reservation is expired
-reservationSchema.methods.isExpired = function() {
-  return this.expiresAt && new Date() > this.expiresAt && this.status === 'pending';
-};
-
-// Static method untuk cleanup expired reservations
-reservationSchema.statics.cleanupExpired = async function() {
-  const expiredReservations = await this.find({
-    status: 'pending',
-    expiresAt: { $lt: new Date() }
-  });
+// Virtual for age
+userSchema.virtual('age').get(function() {
+  if (!this.dateOfBirth) return null;
+  const today = new Date();
+  const birthDate = new Date(this.dateOfBirth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
   
-  for (const reservation of expiredReservations) {
-    await reservation.cancel();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
   }
   
-  return expiredReservations.length;
+  return age;
+});
+
+// Virtual for loyalty tier
+userSchema.virtual('loyaltyTier').get(function() {
+  if (this.loyaltyPoints >= 10000) return 'platinum';
+  if (this.loyaltyPoints >= 5000) return 'gold';
+  if (this.loyaltyPoints >= 1000) return 'silver';
+  return 'bronze';
+});
+
+// Pre-save middleware to hash password
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Method to compare password
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Virtual untuk mendapatkan seat count
-reservationSchema.virtual('seatCount').get(function() {
-  return this.seats.length;
-});
+// Method to generate email verification token
+userSchema.methods.generateEmailVerificationToken = function() {
+  const token = require('crypto').randomBytes(32).toString('hex');
+  this.emailVerificationToken = token;
+  this.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  return token;
+};
 
-// Virtual untuk format seat display
-reservationSchema.virtual('seatDisplay').get(function() {
-  return this.seats.map(seat => `${seat.row}${seat.number}`).join(', ');
-});
+// Method to generate password reset token
+userSchema.methods.generatePasswordResetToken = function() {
+  const token = require('crypto').randomBytes(32).toString('hex');
+  this.passwordResetToken = token;
+  this.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  return token;
+};
 
-const Reservation = mongoose.models.Reservation || mongoose.model('Reservation', reservationSchema);
+// Method to verify email
+userSchema.methods.verifyEmail = function() {
+  this.isEmailVerified = true;
+  this.emailVerificationToken = undefined;
+  this.emailVerificationExpires = undefined;
+  return this.save();
+};
 
-module.exports = Reservation;
+// Method to update last login
+userSchema.methods.updateLastLogin = function() {
+  this.lastLogin = new Date();
+  return this.save();
+};
+
+// Method to add loyalty points
+userSchema.methods.addLoyaltyPoints = function(points) {
+  this.loyaltyPoints += points;
+  return this.save();
+};
+
+// Method to deduct loyalty points
+userSchema.methods.deductLoyaltyPoints = function(points) {
+  if (this.loyaltyPoints >= points) {
+    this.loyaltyPoints -= points;
+    return this.save();
+  }
+  throw new Error('Insufficient loyalty points');
+};
+
+// Method to update spending
+userSchema.methods.updateSpending = function(amount) {
+  this.totalSpent += amount;
+  this.reservationCount += 1;
+  
+  // Add loyalty points (1 point per dollar spent)
+  this.loyaltyPoints += Math.floor(amount);
+  
+  return this.save();
+};
+
+// Method to add favorite genre
+userSchema.methods.addFavoriteGenre = function(genre) {
+  if (!this.preferences.favoriteGenres.includes(genre)) {
+    this.preferences.favoriteGenres.push(genre);
+    return this.save();
+  }
+  return Promise.resolve(this);
+};
+
+// Method to remove favorite genre
+userSchema.methods.removeFavoriteGenre = function(genre) {
+  this.preferences.favoriteGenres = this.preferences.favoriteGenres.filter(g => g !== genre);
+  return this.save();
+};
+
+// Static method to find users by role
+userSchema.statics.findByRole = function(role) {
+  return this.find({ role: role, isActive: true }).sort({ createdAt: -1 });
+};
+
+// Static method to find users by loyalty tier
+userSchema.statics.findByLoyaltyTier = function(tier) {
+  let minPoints = 0;
+  let maxPoints = Infinity;
+  
+  switch (tier) {
+    case 'bronze':
+      maxPoints = 999;
+      break;
+    case 'silver':
+      minPoints = 1000;
+      maxPoints = 4999;
+      break;
+    case 'gold':
+      minPoints = 5000;
+      maxPoints = 9999;
+      break;
+    case 'platinum':
+      minPoints = 10000;
+      break;
+  }
+  
+  return this.find({
+    loyaltyPoints: { $gte: minPoints, $lte: maxPoints },
+    isActive: true
+  }).sort({ loyaltyPoints: -1 });
+};
+
+// Static method to search users
+userSchema.statics.searchUsers = function(query) {
+  return this.find({
+    $or: [
+      { username: { $regex: query, $options: 'i' } },
+      { email: { $regex: query, $options: 'i' } },
+      { firstName: { $regex: query, $options: 'i' } },
+      { lastName: { $regex: query, $options: 'i' } }
+    ],
+    isActive: true
+  }).sort({ createdAt: -1 });
+};
+
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+
+module.exports = User;
