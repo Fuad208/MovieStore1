@@ -1,8 +1,9 @@
-import React, { Component } from 'react';
-import { connect } from 'react-redux';
-import { NavLink } from 'react-router-dom';
+// client/src/layouts/AdminLayout/components/Sidebar/Sidebar.js
+import React, { useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
-  withStyles,
+  makeStyles,
   Divider,
   List,
   ListItem,
@@ -14,144 +15,131 @@ import DashboardIcon from '@material-ui/icons/DashboardOutlined';
 import PeopleIcon from '@material-ui/icons/PeopleOutlined';
 import InfoIcon from '@material-ui/icons/InfoOutlined';
 import AccountBoxIcon from '@material-ui/icons/AccountBoxOutlined';
-// Component styles
+import MovieIcon from '@material-ui/icons/MovieOutlined';
+import TheatersIcon from '@material-ui/icons/TheatersOutlined';
+import ScheduleIcon from '@material-ui/icons/ScheduleOutlined';
+import BookOnlineIcon from '@material-ui/icons/BookOnlineOutlined';
+
 import styles from './styles';
 
-class Sidebar extends Component {
-  render() {
-    const { classes, user } = this.props;
-    return (
-      <section className={classes.root}>
-        <List component="div" disablePadding>
-          <ListItem
-            activeClassName={classes.activeListItem}
-            className={classes.listItem}
-            component={NavLink}
-            to="/admin/dashboard">
-            <ListItemIcon className={classes.listItemIcon}>
-              <DashboardIcon />
-            </ListItemIcon>
-            <ListItemText
-              classes={{ primary: classes.listItemText }}
-              primary="Dashboard"
-            />
-          </ListItem>
-          <ListItem
-            activeClassName={classes.activeListItem}
-            className={classes.listItem}
-            component={NavLink}
-            to="/admin/movies">
-            <ListItemIcon className={classes.listItemIcon}>
-              <DashboardIcon />
-            </ListItemIcon>
-            <ListItemText
-              classes={{ primary: classes.listItemText }}
-              primary="Movies"
-            />
-          </ListItem>
-          <ListItem
-            activeClassName={classes.activeListItem}
-            className={classes.listItem}
-            component={NavLink}
-            to="/admin/cinemas">
-            <ListItemIcon className={classes.listItemIcon}>
-              <DashboardIcon />
-            </ListItemIcon>
-            <ListItemText
-              classes={{ primary: classes.listItemText }}
-              primary="Cinemas"
-            />
-          </ListItem>
-          <ListItem
-            activeClassName={classes.activeListItem}
-            className={classes.listItem}
-            component={NavLink}
-            to="/admin/showtimes">
-            <ListItemIcon className={classes.listItemIcon}>
-              <PeopleIcon />
-            </ListItemIcon>
-            <ListItemText
-              classes={{ primary: classes.listItemText }}
-              primary="Showtimes"
-            />
-          </ListItem>
-          <ListItem
-            activeClassName={classes.activeListItem}
-            className={classes.listItem}
-            component={NavLink}
-            to="/admin/reservations">
-            <ListItemIcon className={classes.listItemIcon}>
-              <PeopleIcon />
-            </ListItemIcon>
-            <ListItemText
-              classes={{ primary: classes.listItemText }}
-              primary="Reservations"
-            />
-          </ListItem>
-          {user && user.role === 'superadmin' && (
+const useStyles = makeStyles(styles);
+
+const Sidebar = ({ className }) => {
+  const classes = useStyles();
+  const location = useLocation();
+  const user = useSelector(state => state.authState.user);
+
+  const navigationItems = useMemo(() => [
+    {
+      path: '/admin/dashboard',
+      label: 'Dashboard',
+      icon: DashboardIcon,
+      visible: true
+    },
+    {
+      path: '/admin/movies',
+      label: 'Movies',
+      icon: MovieIcon,
+      visible: true
+    },
+    {
+      path: '/admin/cinemas',
+      label: 'Cinemas',
+      icon: TheatersIcon,
+      visible: true
+    },
+    {
+      path: '/admin/showtimes',
+      label: 'Showtimes',
+      icon: ScheduleIcon,
+      visible: true
+    },
+    {
+      path: '/admin/reservations',
+      label: 'Reservations',
+      icon: BookOnlineIcon,
+      visible: true
+    },
+    {
+      path: '/admin/users',
+      label: 'Users',
+      icon: PeopleIcon,
+      visible: user?.role === 'superadmin'
+    },
+    {
+      path: '/admin/account',
+      label: 'Account',
+      icon: AccountBoxIcon,
+      visible: true
+    }
+  ], [user?.role]);
+
+  const visibleItems = useMemo(() => 
+    navigationItems.filter(item => item.visible),
+    [navigationItems]
+  );
+
+  return (
+    <section className={`${classes.root} ${className}`}>
+      <List component="nav" disablePadding>
+        {visibleItems.map((item) => {
+          const IconComponent = item.icon;
+          const isActive = location.pathname === item.path;
+          
+          return (
             <ListItem
-              activeClassName={classes.activeListItem}
-              className={classes.listItem}
+              key={item.path}
+              button
+              className={`${classes.listItem} ${isActive ? classes.activeListItem : ''}`}
               component={NavLink}
-              to="/admin/users">
+              to={item.path}
+              exact
+            >
               <ListItemIcon className={classes.listItemIcon}>
-                <PeopleIcon />
+                <IconComponent />
               </ListItemIcon>
               <ListItemText
                 classes={{ primary: classes.listItemText }}
-                primary="Users"
+                primary={item.label}
               />
             </ListItem>
-          )}
-          <ListItem
-            activeClassName={classes.activeListItem}
-            className={classes.listItem}
-            component={NavLink}
-            to="/admin/account">
-            <ListItemIcon className={classes.listItemIcon}>
-              <AccountBoxIcon />
-            </ListItemIcon>
-            <ListItemText
-              classes={{ primary: classes.listItemText }}
-              primary="Account"
-            />
-          </ListItem>
-        </List>
-        <Divider className={classes.listDivider} />
-        <List
-          component="div"
-          disablePadding
-          subheader={
-            <ListSubheader className={classes.listSubheader}>
-              Support
-            </ListSubheader>
-          }>
-          <ListItem
-            className={classes.listItem}
-            component="a"
-            href="http://georgesimos.com"
-            target="_blank">
-            <ListItemIcon className={classes.listItemIcon}>
-              <InfoIcon />
-            </ListItemIcon>
-            <ListItemText
-              classes={{ primary: classes.listItemText }}
-              primary="Customer support"
-            />
-          </ListItem>
-        </List>
-      </section>
-    );
-  }
-}
+          );
+        })}
+      </List>
+      
+      <Divider className={classes.listDivider} />
+      
+      <List
+        component="nav"
+        disablePadding
+        subheader={
+          <ListSubheader 
+            className={classes.listSubheader}
+            component="div"
+          >
+            Support
+          </ListSubheader>
+        }
+      >
+        <ListItem
+          button
+          className={classes.listItem}
+          component="a"
+          href="http://georgesimos.com"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <ListItemIcon className={classes.listItemIcon}>
+            <InfoIcon />
+          </ListItemIcon>
+          <ListItemText
+            classes={{ primary: classes.listItemText }}
+            primary="Customer support"
+          />
+        </ListItem>
+      </List>
+    </section>
+  );
+};
 
-const mapStateToProps = state => ({
-  user: state.authState.user
-});
-
-const mapDispatchToProps = {};
-
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(withStyles(styles)(Sidebar));
+export default Sidebar;

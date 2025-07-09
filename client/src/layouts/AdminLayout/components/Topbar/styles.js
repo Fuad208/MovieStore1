@@ -1,52 +1,68 @@
-export default theme => ({
+export const topbarStyles = theme => ({
   root: {
-    borderBottom: `1px solid ${theme.palette.borderShadow}`,
-    boxShadow: `0 0 35px 0  ${theme.palette.borderShadow}`,
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    boxShadow: theme.shadows[1],
     backgroundColor: theme.palette.background.paper,
     display: 'flex',
     alignItems: 'center',
-    height: theme.topBar.height,
+    height: theme.mixins.toolbar.minHeight || 64,
     zIndex: theme.zIndex.appBar
   },
   toolbar: {
     minHeight: 'auto',
     width: '100%',
-    paddingLeft: 0
+    paddingLeft: 0,
+    paddingRight: theme.spacing(2)
   },
   brandWrapper: {
-    background: theme.palette.default.dark,
+    background: theme.palette.primary.main,
     display: 'flex',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '271px',
-    height: theme.topBar.height,
+    width: 271,
+    height: '100%',
+    padding: theme.spacing(0, 2),
     flexShrink: 0
   },
   logo: {
-    width: 'calc(100% - 160px)',
-    maxWidth: '100%',
-    margin: 'auto',
-    fontFamily: 'Montserrat,sans-serif',
-    fontSize: '22px',
+    fontFamily: 'Montserrat, sans-serif',
+    fontSize: '1.25rem',
     fontWeight: 700,
-    letterSpacing: 3,
-    color: theme.palette.common.white
+    letterSpacing: 1,
+    color: theme.palette.primary.contrastText,
+    textDecoration: 'none'
   },
   title: {
     marginLeft: theme.spacing(3),
-    textTransform: 'uppercase',
     textDecoration: 'none',
-    fontSize: '14px',
-    color: theme.palette.common.white
+    color: theme.palette.text.primary,
+    '&:hover': {
+      color: theme.palette.primary.main
+    }
   },
   menuButton: {
-    color: theme.palette.common.white,
-    marginLeft: '-4px'
+    color: theme.palette.primary.contrastText,
+    '&:hover': {
+      backgroundColor: 'rgba(255, 255, 255, 0.1)'
+    }
+  },
+  actions: {
+    marginLeft: 'auto',
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1)
   },
   notificationsButton: {
-    marginLeft: 'auto'
+    color: theme.palette.text.primary,
+    '&:hover': {
+      backgroundColor: theme.palette.action.hover
+    }
   },
-  signOutButton: {
-    marginLeft: theme.spacing(1)
+  avatar: {
+    width: 32,
+    height: 32,
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
+    fontSize: '0.875rem'
   }
 });

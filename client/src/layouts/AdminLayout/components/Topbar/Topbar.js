@@ -1,80 +1,149 @@
-import React, { Component } from 'react';
-import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
+// client/src/layouts/AdminLayout/components/Topbar/Topbar.js
+import React, { useCallback, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { NavLink } from 'react-router-dom';
 import { logout } from '../../../../store/actions';
-import { withStyles } from '@material-ui/core/styles';
-import { Badge, Toolbar, IconButton } from '@material-ui/core';
+import { 
+  makeStyles, 
+  Badge, 
+  Toolbar, 
+  IconButton, 
+  Typography,
+  Menu,
+  MenuItem,
+  Avatar,
+  Tooltip
+} from '@material-ui/core';
 import MenuIcon from '@material-ui/icons/Menu';
 import CloseIcon from '@material-ui/icons/Close';
 import NotificationsIcon from '@material-ui/icons/NotificationsOutlined';
 import InputIcon from '@material-ui/icons/Input';
+import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 
-// Component styles
 import styles from './styles';
 
-class Topbar extends Component {
-  static defaultProps = {
-    title: 'Dashboard',
-    isSidebarOpen: false
-  };
-  static propTypes = {
-    children: PropTypes.node,
-    classes: PropTypes.object.isRequired,
-    isSidebarOpen: PropTypes.bool,
-    title: PropTypes.string,
-    logout: PropTypes.func.isRequired,
-    auth: PropTypes.object.isRequired
-  };
+const useStyles = makeStyles(styles);
 
-  handleSignOut = async () => {
-    this.props.logout();
-  };
+const Topbar = ({ 
+  title = 'Dashboard', 
+  isSidebarOpen = false, 
+  onToggleSidebar,
+  ToolbarClasses,
+  children 
+}) => {
+  const classes = useStyles();
+  const dispatch = useDispatch();
+  const auth = useSelector(state => state.authState);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [notificationCount] = useState(4); // This could come from Redux state
 
-  render() {
-    const {
-      classes,
-      ToolbarClasses,
-      children,
-      isSidebarOpen,
-      onToggleSidebar
-    } = this.props;
-    return (
-      <div className={`${classes.root} , ${ToolbarClasses}`}>
-        <Toolbar className={classes.toolbar}>
-          <div className={classes.brandWrapper}>
-            <div className={classes.logo}>Movie Store</div>
+  const handleSignOut = useCallback(async () => {
+    try {
+      await dispatch(logout());
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  }, [dispatch]);
+
+  const handleNotificationClick = useCallback(() => {
+    console.log('Notification clicked');
+    // Handle notification logic here
+  }, []);
+
+  const handleMenuOpen = useCallback((event) => {
+    setAnchorEl(event.currentTarget);
+  }, []);
+
+  const handleMenuClose = useCallback(() => {
+    setAnchorEl(null);
+  }, []);
+
+  const handleProfileClick = useCallback(() => {
+    handleMenuClose();
+    // Navigate to profile or handle profile action
+  }, []);
+
+  return (
+    <div className={`${classes.root} ${ToolbarClasses}`}>
+      <Toolbar className={classes.toolbar}>
+        <div className={classes.brandWrapper}>
+          <Typography variant="h6" className={classes.logo}>
+            Movie Store
+          </Typography>
+          <Tooltip title={isSidebarOpen ? 'Close Menu' : 'Open Menu'}>
             <IconButton
               className={classes.menuButton}
-              aria-label="Menu"
-              onClick={onToggleSidebar}>
+              aria-label={isSidebarOpen ? 'Close Menu' : 'Open Menu'}
+              onClick={onToggleSidebar}
+              edge="start"
+            >
               {isSidebarOpen ? <CloseIcon /> : <MenuIcon />}
             </IconButton>
-          </div>
+          </Tooltip>
+        </div>
 
-          <NavLink className={classes.title} to="/">
-            Movie Store ->
-          </NavLink>
+        <NavLink 
+          className={classes.title} 
+          to="/"
+          aria-label="Go to main site"
+        >
+          <Typography variant="body2" component="span">
+            Movie Store →
+          </Typography>
+        </NavLink>
 
-          <IconButton
-            className={classes.notificationsButton}
-            onClick={() => console.log('Notification')}>
-            <Badge badgeContent={4} color="primary" variant="dot">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
-          <IconButton
-            className={classes.signOutButton}
-            onClick={this.handleSignOut}>
-            <InputIcon />
-          </IconButton>
-        </Toolbar>
-        {children}
-      </div>
-    );
-  }
-}
-const mapStateToProps = state => ({
-  auth: state.authState
-});
-export default connect(mapStateToProps, { logout })(withStyles(styles)(Topbar));
+        <div className={classes.actions}>
+          <Tooltip title="Notifications">
+            <IconButton
+              className={classes.notificationsButton}
+              onClick={handleNotificationClick}
+              aria-label={`${notificationCount} notifications`}
+            >
+              <Badge 
+                badgeContent={notificationCount} 
+                color="primary" 
+                variant={notificationCount > 0 ? 'standard' : 'dot'}
+              >
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Account">
+            <IconButton
+              onClick={handleMenuOpen}
+              aria-label="Account menu"
+            >
+              <Avatar className={classes.avatar}>
+                {auth.user?.name ? auth.user.name.charAt(0).toUpperCase() : <AccountCircleIcon />}
+              </Avatar>
+            </IconButton>
+          </Tooltip>
+
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <MenuItem onClick={handleProfileClick}>Profile</MenuItem>
+            <MenuItem onClick={handleSignOut}>
+              <InputIcon fontSize="small" style={{ marginRight: 8 }} />
+              Sign Out
+            </MenuItem>
+          </Menu>
+        </div>
+      </Toolbar>
+      {children}
+    </div>
+  );
+};
+
+export default Topbar;

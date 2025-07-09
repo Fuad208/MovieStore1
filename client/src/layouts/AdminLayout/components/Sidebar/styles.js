@@ -1,97 +1,62 @@
-export default theme => ({
+export const sidebarStyles = theme => ({
   root: {
     backgroundColor: theme.palette.background.paper,
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    paddingTop: theme.spacing(3),
-    paddingLeft: theme.spacing(1),
-    paddingRight: theme.spacing(1)
-  },
-  profile: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    minHeight: 'fit-content'
-  },
-  avatar: {
-    width: '100px',
-    height: '100px'
-  },
-  nameText: {
-    marginTop: theme.spacing(2)
-  },
-  bioText: {},
-  profileDivider: {
-    marginBottom: theme.spacing(2),
-    marginTop: theme.spacing(2)
+    padding: theme.spacing(2, 1)
   },
   listSubheader: {
-    color: theme.palette.common.contrastText
+    color: theme.palette.text.secondary,
+    fontWeight: 600,
+    fontSize: '0.75rem',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    padding: theme.spacing(1, 2),
+    backgroundColor: 'transparent'
   },
   listItem: {
+    borderRadius: theme.shape.borderRadius,
+    margin: theme.spacing(0.5, 0),
+    padding: theme.spacing(1, 2),
     cursor: 'pointer',
+    transition: theme.transitions.create(['background-color', 'border-left'], {
+      duration: theme.transitions.duration.shortest
+    }),
     '&:hover': {
-      backgroundColor: theme.palette.default.light,
-      borderLeft: `4px solid ${theme.palette.default.dark}`,
-      borderRadius: '4px',
+      backgroundColor: theme.palette.action.hover,
       '& $listItemIcon': {
-        marginLeft: '-4px'
+        color: theme.palette.primary.main
       }
-    },
-    '& + &': {
-      marginTop: theme.spacing(1)
     }
   },
   activeListItem: {
-    borderLeft: `4px solid ${theme.palette.default.dark}`,
-    borderRadius: '4px',
-    backgroundColor: theme.palette.default.light,
+    backgroundColor: theme.palette.action.selected,
+    borderLeft: `3px solid ${theme.palette.primary.main}`,
     '& $listItemText': {
-      color: theme.palette.common.contrastText
+      color: theme.palette.primary.main,
+      fontWeight: 600
     },
     '& $listItemIcon': {
-      marginLeft: '-4px'
+      color: theme.palette.primary.main
     }
   },
   listItemIcon: {
-    marginRight: 0
+    minWidth: 40,
+    color: theme.palette.text.secondary,
+    transition: theme.transitions.create('color', {
+      duration: theme.transitions.duration.shortest
+    })
   },
   listItemText: {
     fontWeight: 500,
-    color: theme.palette.common.contrastText
+    color: theme.palette.text.primary,
+    '& .MuiTypography-root': {
+      fontSize: '0.875rem'
+    }
   },
   listDivider: {
-    marginBottom: theme.spacing(2),
-    marginTop: theme.spacing(2)
-  },
-  'Mui-selected': {
-    display: 'none'
-  },
-  collapseContainer: { marginTop: theme.spacing(2) },
-  nestedItem: {
-    cursor: 'pointer',
-    paddingLeft: theme.spacing(4),
-    position: 'relative',
-    paddingTop: '3px',
-    paddingBottom: 0,
-    '&:before': {
-      content: '""',
-      position: 'absolute',
-      top: '0px',
-      left: '20px',
-      display: 'block',
-      height: ' 100%',
-      width: '2px',
-      background: '#eee'
-    },
-    '&:hover:before': {
-      background: theme.palette.default.dark
-    }
-  },
-  activeNestedItem: {
-    '&:before': {
-      background: theme.palette.default.dark
-    }
+    margin: theme.spacing(2, 0),
+    backgroundColor: theme.palette.divider
   }
 });

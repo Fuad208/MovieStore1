@@ -1,67 +1,85 @@
-import React, { Component, Fragment } from 'react';
-import { withStyles } from '@material-ui/core/styles';
-import classnames from 'classnames';
-import PropTypes from 'prop-types';
-import { Drawer } from '@material-ui/core';
+// client/src/layouts/AdminLayout/AdminLayout.js
+import React, { useState, useCallback, useMemo } from 'react';
+import { makeStyles } from '@material-ui/core/styles';
+import { Drawer, useMediaQuery, useTheme } from '@material-ui/core';
 import { Footer, Sidebar, Topbar } from './components';
+import PropTypes from 'prop-types';
 
 // Component styles
 import styles from './styles';
 
-class AdminLayout extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isOpen: false
-    };
-  }
-  static defaultProps = {
-    isSidebarOpen: false
-  };
-  static propTypes = {
-    children: PropTypes.node,
-    isSidebarOpen: PropTypes.bool,
-    title: PropTypes.string
-  };
+const useStyles = makeStyles(styles);
 
-  handleToggleOpen = () => {
-    this.setState(prevState => ({ isOpen: !prevState.isOpen }));
-  };
+const AdminLayout = ({ children, title = 'Dashboard' }) => {
+  const classes = useStyles();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  const [isOpen, setIsOpen] = useState(false);
 
-  handleClose = () => {
-    this.setState({ isOpen: false });
-  };
+  const handleToggleOpen = useCallback(() => {
+    setIsOpen(prev => !prev);
+  }, []);
 
-  render() {
-    const { isOpen } = this.state;
-    const { title, children, classes } = this.props;
-    return (
-      <Fragment>
-        <Topbar
-          title={title}
-          ToolbarClasses={classes.topbar}
-          isSidebarOpen={isOpen}
-          onToggleSidebar={this.handleToggleOpen}
-        />
-        <Drawer
-          anchor="left"
-          classes={{ paper: classes.drawerPaper }}
-          open={isOpen}
-          onClose={this.handleClose}
-          variant="persistent">
-          <Sidebar className={classes.sidebar} />
-        </Drawer>
-        <main
-          className={classnames({
-            [classes.contentShift]: isOpen,
-            [classes.content]: true
-          })}>
-          {children}
-          <Footer />
-        </main>
-      </Fragment>
-    );
-  }
-}
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+  }, []);
 
-export default withStyles(styles)(AdminLayout);
+  // Auto-close sidebar on mobile when screen size changes
+  React.useEffect(() => {
+    if (isMobile && isOpen) {
+      setIsOpen(false);
+    }
+  }, [isMobile, isOpen]);
+
+  const drawerVariant = useMemo(() => 
+    isMobile ? 'temporary' : 'persistent', 
+    [isMobile]
+  );
+
+  const shouldShowBackdrop = useMemo(() => 
+    isMobile && isOpen, 
+    [isMobile, isOpen]
+  );
+
+  return (
+    <>
+      <Topbar
+        title={title}
+        ToolbarClasses={classes.topbar}
+        isSidebarOpen={isOpen}
+        onToggleSidebar={handleToggleOpen}
+      />
+      
+      <Drawer
+        anchor="left"
+        classes={{ paper: classes.drawerPaper }}
+        open={isOpen}
+        onClose={handleClose}
+        variant={drawerVariant}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile
+          BackdropProps: {
+            invisible: !shouldShowBackdrop
+          }
+        }}
+      >
+        <Sidebar className={classes.sidebar} />
+      </Drawer>
+      
+      <main
+        className={`${classes.content} ${isOpen ? classes.contentShift : ''}`}
+      >
+        {children}
+        <Footer />
+      </main>
+    </>
+  );
+};
+
+AdminLayout.propTypes = {
+  children: PropTypes.node.isRequired,
+  title: PropTypes.string
+};
+
+export default AdminLayout;

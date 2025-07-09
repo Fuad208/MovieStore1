@@ -1,22 +1,32 @@
 import React from 'react';
-import { makeStyles } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
+import { Box } from '@material-ui/core';
 import { Navbar, Footer } from './components';
 
 const useStyles = makeStyles(theme => ({
   root: {
     backgroundColor: theme.palette.background.dark,
     color: theme.palette.common.white,
-    height: '100%'
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  main: {
+    flex: 1,
+    paddingTop: '80px', // Account for fixed navbar
+    position: 'relative'
   }
 }));
 
-function PublicLayout(props) {
-  const classes = useStyles(props);
-  const { children, withFooter = true } = props;
+function PublicLayout({ children, withFooter = true }) {
+  const classes = useStyles();
+
   return (
     <div className={classes.root}>
       <Navbar />
-      {children}
+      <Box component="main" className={classes.main}>
+        {children}
+      </Box>
       {withFooter && <Footer />}
     </div>
   );
