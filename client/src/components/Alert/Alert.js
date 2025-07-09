@@ -1,15 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import CustomizedSnackbar from '../CustomizedSnackbar/';
 
-const TimedAlert = ({ alert }) => {
+const TimedAlert = ({ alert, onClose, autoHideDuration = 6000 }) => {
   const [open, setOpen] = useState(true);
 
+  const handleClose = useCallback((event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpen(false);
+    if (onClose) {
+      onClose(alert.id);
+    }
+  }, [alert.id, onClose]);
+
   useEffect(() => {
-    const timer = setTimeout(() => setOpen(false), 3000); // 3 detik
+    if (!open) return;
+
+    const timer = setTimeout(() => {
+      handleClose(null, 'timeout');
+    }, autoHideDuration);
+
     return () => clearTimeout(timer);
-  }, []);
+  }, [open, autoHideDuration, handleClose]);
+
+  // Don't render if already closed
+  if (!open) return null;
 
   return (
     <CustomizedSnackbar
@@ -18,26 +36,52 @@ const TimedAlert = ({ alert }) => {
       horizontal="right"
       variant={alert.alertType}
       message={alert.msg}
+      onClose={handleClose}
+      autoHideDuration={autoHideDuration}
     />
   );
 };
 
 TimedAlert.propTypes = {
   alert: PropTypes.shape({
-    id: PropTypes.string,
-    msg: PropTypes.string,
-    alertType: PropTypes.string
-  }).isRequired
+    id: PropTypes.string.isRequired,
+    msg: PropTypes.string.isRequired,
+    alertType: PropTypes.oneOf(['success', 'warning', 'error', 'info']).isRequired
+  }).isRequired,
+  onClose: PropTypes.func,
+  autoHideDuration: PropTypes.number
 };
 
-const Alert = ({ alerts }) =>
-  alerts.length > 0 &&
-  alerts.map((alert, index) => (
-    <TimedAlert key={`custom-alert-${index}-${alert.id}`} alert={alert} />
-  ));
+const Alert = ({ alerts, onCloseAlert }) => {
+  // Filter out any invalid alerts
+  const validAlerts = alerts.filter(alert => 
+    alert && alert.id && alert.msg && alert.alertType
+  );
+
+  if (validAlerts.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      {validAlerts.map((alert) => (
+        <TimedAlert 
+          key={`alert-${alert.id}`} 
+          alert={alert} 
+          onClose={onCloseAlert}
+        />
+      ))}
+    </>
+  );
+};
 
 Alert.propTypes = {
-  alerts: PropTypes.array.isRequired
+  alerts: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    msg: PropTypes.string.isRequired,
+    alertType: PropTypes.oneOf(['success', 'warning', 'error', 'info']).isRequired
+  })).isRequired,
+  onCloseAlert: PropTypes.func
 };
 
 Alert.defaultProps = {
@@ -45,7 +89,11 @@ Alert.defaultProps = {
 };
 
 const mapStateToProps = (state) => ({
-  alerts: state.alertState.alerts
+  alerts: state.alertState?.alerts || []
 });
 
-export default connect(mapStateToProps)(Alert);
+const mapDispatchToProps = (dispatch) => ({
+  onCloseAlert: (alertId) => dispatch({ type: 'REMOVE_ALERT', payload: alertId })
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(Alert);

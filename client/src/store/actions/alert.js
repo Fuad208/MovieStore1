@@ -1,19 +1,27 @@
-import { SET_ALERT, REMOVE_ALERT } from '../types/alert';
+import { ALERT_TYPES } from '../types/alert';
 
+// Enhanced alert action with better ID generation and cleanup
 export const setAlert = (message, alertType = 'info', timeout = 5000) => dispatch => {
-  const id = Math.random().toString(36).substr(2, 9);
+  // Use timestamp + random for better uniqueness
+  const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   
   dispatch({
-    type: SET_ALERT,
-    payload: { id, message, alertType }
+    type: ALERT_TYPES.SET_ALERT,
+    payload: { id, message, alertType, timestamp: Date.now() }
   });
   
-  setTimeout(() => {
-    dispatch({ type: REMOVE_ALERT, payload: id });
-  }, timeout);
+  if (timeout > 0) {
+    setTimeout(() => {
+      dispatch(removeAlert(id));
+    }, timeout);
+  }
 };
 
 export const removeAlert = (id) => ({
-  type: REMOVE_ALERT,
+  type: ALERT_TYPES.REMOVE_ALERT,
   payload: id
+});
+
+export const clearAllAlerts = () => ({
+  type: ALERT_TYPES.CLEAR_ALL_ALERTS
 });

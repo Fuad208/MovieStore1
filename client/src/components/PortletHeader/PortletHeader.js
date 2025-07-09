@@ -1,38 +1,65 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import { withStyles } from '@material-ui/core';
+import { withStyles } from '@material-ui/core/styles';
 
-// Component styles
 const styles = theme => ({
   root: {
     alignItems: 'center',
-    borderBottom: `1px solid ${theme.palette.border}`,
-    borderTopLeftRadius: '2px',
-    borderTopRightRadius: '2px',
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    borderTopLeftRadius: theme.shape.borderRadius,
+    borderTopRightRadius: theme.shape.borderRadius,
     display: 'flex',
-    height: '64px',
+    minHeight: theme.spacing(8),
     justifyContent: 'space-between',
-    paddingLeft: theme.spacing(3),
-    paddingRight: theme.spacing(3),
-    position: 'relative'
+    padding: theme.spacing(0, 3),
+    position: 'relative',
+    backgroundColor: theme.palette.background.paper,
+    transition: theme.transitions.create(['box-shadow'], {
+      duration: theme.transitions.duration.short,
+    }),
   },
   noDivider: {
-    borderBottom: 'none'
+    borderBottom: 'none',
   },
   noPadding: {
-    padding: 0
+    padding: 0,
+  },
+  dense: {
+    minHeight: theme.spacing(6),
+    padding: theme.spacing(0, 2),
+  },
+  elevated: {
+    boxShadow: theme.shadows[1],
+  },
+  sticky: {
+    position: 'sticky',
+    top: 0,
+    zIndex: theme.zIndex.appBar - 1,
   }
 });
 
-const PortletHeader = props => {
-  const { classes, className, noDivider, noPadding, children, ...rest } = props;
+const PortletHeader = React.memo((props) => {
+  const { 
+    classes, 
+    className, 
+    noDivider = false,
+    noPadding = false,
+    dense = false,
+    elevated = false,
+    sticky = false,
+    children, 
+    ...rest 
+  } = props;
 
   const rootClassName = classNames(
+    classes.root,
     {
-      [classes.root]: true,
       [classes.noDivider]: noDivider,
-      [classes.noPadding]: noPadding
+      [classes.noPadding]: noPadding,
+      [classes.dense]: dense,
+      [classes.elevated]: elevated,
+      [classes.sticky]: sticky,
     },
     className
   );
@@ -42,14 +69,19 @@ const PortletHeader = props => {
       {children}
     </div>
   );
-};
+});
+
+PortletHeader.displayName = 'PortletHeader';
 
 PortletHeader.propTypes = {
   children: PropTypes.node,
   className: PropTypes.string,
   classes: PropTypes.object.isRequired,
   noDivider: PropTypes.bool,
-  noPadding: PropTypes.bool
+  noPadding: PropTypes.bool,
+  dense: PropTypes.bool,
+  elevated: PropTypes.bool,
+  sticky: PropTypes.bool,
 };
 
 export default withStyles(styles)(PortletHeader);

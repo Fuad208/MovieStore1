@@ -1,161 +1,129 @@
-import {
-  GET_CINEMAS,
-  GET_CINEMAS_SUCCESS,
-  GET_CINEMAS_FAILURE,
-  GET_CINEMA,
-  GET_CINEMA_SUCCESS,
-  GET_CINEMA_FAILURE,
-  ADD_CINEMA,
-  UPDATE_CINEMA,
-  DELETE_CINEMA,
-  SELECT_CINEMA,
-  CLEAR_SELECTED_CINEMA,
-  SET_LOADING
-} from '../types';
+import { CINEMA_TYPES } from '../types/cinemas';
 import { setAlert } from './alert';
+import { makeApiRequest } from '../utils/api';
 
-// Base URL for API calls
-const BASE_URL = process.env.REACT_APP_API_URL || '';
-
-// Helper function to get auth headers
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('jwtToken');
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  };
-};
-
-// Helper function to handle API responses
-const handleResponse = async (response) => {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-  }
-  return response.json();
-};
-
-// Action creators
 export const selectCinema = (cinema) => ({
-  type: SELECT_CINEMA,
+  type: CINEMA_TYPES.SELECT_CINEMA,
   payload: cinema
 });
 
 export const clearSelectedCinema = () => ({
-  type: CLEAR_SELECTED_CINEMA
+  type: CINEMA_TYPES.CLEAR_SELECTED_CINEMA
 });
 
-export const getCinemas = (page = 1, limit = 10) => async (dispatch) => {
-  dispatch({ type: SET_LOADING, payload: true });
+export const setCinemasLoading = (loading) => ({
+  type: CINEMA_TYPES.SET_CINEMAS_LOADING,
+  payload: loading
+});
+
+export const setCinemaError = (error) => ({
+  type: CINEMA_TYPES.SET_CINEMA_ERROR,
+  payload: error
+});
+
+export const clearCinemaError = () => ({
+  type: CINEMA_TYPES.CLEAR_CINEMA_ERROR
+});
+
+export const getCinemas = (params = {}) => async dispatch => {
+  dispatch({ type: CINEMA_TYPES.GET_CINEMAS_REQUEST });
   
   try {
-    const response = await fetch(`${BASE_URL}/cinemas?page=${page}&limit=${limit}`, {
-      method: 'GET',
-      headers: getAuthHeaders()
-    });
+    const queryParams = new URLSearchParams(params).toString();
+    const endpoint = `/cinemas${queryParams ? `?${queryParams}` : ''}`;
     
-    const data = await handleResponse(response);
-    dispatch({ type: GET_CINEMAS_SUCCESS, payload: data });
+    const data = await makeApiRequest(endpoint);
+    dispatch({ type: CINEMA_TYPES.GET_CINEMAS_SUCCESS, payload: data });
+    
+    return { success: true, data };
   } catch (error) {
-    dispatch({ type: GET_CINEMAS_FAILURE, payload: error.message });
-    dispatch(setAlert(error.message, 'error', 5000));
-  } finally {
-    dispatch({ type: SET_LOADING, payload: false });
+    dispatch({ type: CINEMA_TYPES.GET_CINEMAS_FAIL, payload: error.message });
+    dispatch(setAlert(error.message, 'error'));
+    return { success: false, error: error.message };
   }
 };
 
-export const getCinema = (id) => async (dispatch) => {
-  dispatch({ type: SET_LOADING, payload: true });
+export const getCinema = (id) => async dispatch => {
+  dispatch({ type: CINEMA_TYPES.GET_CINEMA_REQUEST });
   
   try {
-    const response = await fetch(`${BASE_URL}/cinemas/${id}`, {
-      method: 'GET',
-      headers: getAuthHeaders()
-    });
+    const data = await makeApiRequest(`/cinemas/${id}`);
+    dispatch({ type: CINEMA_TYPES.GET_CINEMA_SUCCESS, payload: data });
     
-    const cinema = await handleResponse(response);
-    dispatch({ type: GET_CINEMA_SUCCESS, payload: cinema });
+    return { success: true, data };
   } catch (error) {
-    dispatch({ type: GET_CINEMA_FAILURE, payload: error.message });
-    dispatch(setAlert(error.message, 'error', 5000));
-  } finally {
-    dispatch({ type: SET_LOADING, payload: false });
+    dispatch({ type: CINEMA_TYPES.GET_CINEMA_FAIL, payload: error.message });
+    dispatch(setAlert(error.message, 'error'));
+    return { success: false, error: error.message };
   }
 };
 
-export const addCinema = (cinema) => async (dispatch) => {
-  dispatch({ type: SET_LOADING, payload: true });
+export const createCinema = (cinemaData) => async dispatch => {
+  dispatch({ type: CINEMA_TYPES.CREATE_CINEMA_REQUEST });
   
   try {
-    const response = await fetch(`${BASE_URL}/cinemas`, {
+    const data = await makeApiRequest('/cinemas', {
       method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(cinema)
+      body: JSON.stringify(cinemaData)
     });
     
-    const newCinema = await handleResponse(response);
-    dispatch({ type: ADD_CINEMA, payload: newCinema });
-    dispatch(setAlert('Cinema created successfully', 'success', 5000));
+    dispatch({ type: CINEMA_TYPES.CREATE_CINEMA_SUCCESS, payload: data });
+    dispatch(setAlert('Cinema created successfully', 'success'));
     
-    return { status: 'success', message: 'Cinema created successfully', data: newCinema };
+    return { success: true, data };
   } catch (error) {
-    dispatch(setAlert(error.message, 'error', 5000));
-    return {
-      status: 'error',
-      message: error.message || 'Failed to create cinema. Please try again.'
-    };
-  } finally {
-    dispatch({ type: SET_LOADING, payload: false });
+    dispatch({ type: CINEMA_TYPES.CREATE_CINEMA_FAIL, payload: error.message });
+    dispatch(setAlert(error.message, 'error'));
+    return { success: false, error: error.message };
   }
 };
 
-export const updateCinema = (cinema, id) => async (dispatch) => {
-  dispatch({ type: SET_LOADING, payload: true });
+export const updateCinema = (id, cinemaData) => async dispatch => {
+  dispatch({ type: CINEMA_TYPES.UPDATE_CINEMA_REQUEST });
   
   try {
-    const response = await fetch(`${BASE_URL}/cinemas/${id}`, {
+    const data = await makeApiRequest(`/cinemas/${id}`, {
       method: 'PATCH',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(cinema)
+      body: JSON.stringify(cinemaData)
     });
     
-    const updatedCinema = await handleResponse(response);
-    dispatch({ type: UPDATE_CINEMA, payload: updatedCinema });
-    dispatch(setAlert('Cinema updated successfully', 'success', 5000));
+    dispatch({ type: CINEMA_TYPES.UPDATE_CINEMA_SUCCESS, payload: data });
+    dispatch(setAlert('Cinema updated successfully', 'success'));
     
-    return { status: 'success', message: 'Cinema updated successfully', data: updatedCinema };
+    return { success: true, data };
   } catch (error) {
-    dispatch(setAlert(error.message, 'error', 5000));
-    return {
-      status: 'error',
-      message: error.message || 'Failed to update cinema. Please try again.'
-    };
-  } finally {
-    dispatch({ type: SET_LOADING, payload: false });
+    dispatch({ type: CINEMA_TYPES.UPDATE_CINEMA_FAIL, payload: error.message });
+    dispatch(setAlert(error.message, 'error'));
+    return { success: false, error: error.message };
   }
 };
 
-export const deleteCinema = (id) => async (dispatch) => {
-  dispatch({ type: SET_LOADING, payload: true });
+export const deleteCinema = (id) => async dispatch => {
+  dispatch({ type: CINEMA_TYPES.DELETE_CINEMA_REQUEST });
   
   try {
-    const response = await fetch(`${BASE_URL}/cinemas/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders()
-    });
+    await makeApiRequest(`/cinemas/${id}`, { method: 'DELETE' });
+    dispatch({ type: CINEMA_TYPES.DELETE_CINEMA_SUCCESS, payload: id });
+    dispatch(setAlert('Cinema deleted successfully', 'success'));
     
-    await handleResponse(response);
-    dispatch({ type: DELETE_CINEMA, payload: id });
-    dispatch(setAlert('Cinema deleted successfully', 'success', 5000));
-    
-    return { status: 'success', message: 'Cinema deleted successfully' };
+    return { success: true };
   } catch (error) {
-    dispatch(setAlert(error.message, 'error', 5000));
-    return {
-      status: 'error',
-      message: error.message || 'Failed to delete cinema. Please try again.'
-    };
-  } finally {
-    dispatch({ type: SET_LOADING, payload: false });
+    dispatch({ type: CINEMA_TYPES.DELETE_CINEMA_FAIL, payload: error.message });
+    dispatch(setAlert(error.message, 'error'));
+    return { success: false, error: error.message };
   }
 };
+
+export const searchCinemas = (query) => ({
+  type: CINEMA_TYPES.SEARCH_CINEMAS,
+  payload: query
+});
+
+export const filterCinemas = (filters) => ({
+  type: CINEMA_TYPES.FILTER_CINEMAS,
+  payload: filters
+});
+
+export const clearCinemaFilters = () => ({
+  type: CINEMA_TYPES.CLEAR_CINEMA_FILTERS
+});
