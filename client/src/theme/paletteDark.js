@@ -1,9 +1,9 @@
-import { red, blue, lightBlue, yellow, green } from '@material-ui/core/colors';
+import { red, blue, lightBlue, yellow, green } from '@mui/material/colors';
 const white = '#FFF';
 const black = '#000';
 
 export default {
-  type: 'dark',
+  mode: 'dark', // Updated from 'type' to 'mode'
   common: {
     black,
     white,
@@ -26,6 +26,12 @@ export default {
     dark: lightBlue[700],
     contrastText: white
   },
+  secondary: {
+    light: '#bb86fc',
+    main: '#7d58ff',
+    dark: '#37248F',
+    contrastText: white
+  },
   success: {
     light: green[300],
     main: green[500],
@@ -44,19 +50,23 @@ export default {
     dark: yellow[700],
     contrastText: white
   },
-  danger: {
+  error: { // Changed from 'danger' to 'error' for MUI v5
     light: red[300],
     main: red[500],
     dark: red[700],
     contrastText: white
   },
+  text: {
+    primary: white,
+    secondary: 'rgba(255, 255, 255, 0.7)',
+    disabled: 'rgba(255, 255, 255, 0.5)',
+  },
   background: {
     paper: 'rgb(45, 45, 45)',
     default: 'rgb(26, 26, 26)',
-    dark: 'rgb(26, 26, 26)'
   },
-  border: '#DFE3E8',
-  divider: '#DFE3E8',
+  divider: 'rgba(255, 255, 255, 0.12)',
+  // Custom colors
   oxfordBlue: 'rgba(5, 41, 73, 1)',
   prussianBlue: 'rgba(19, 49, 92, 1)',
   darkCerulean: 'rgba(19, 64, 116, 1)',

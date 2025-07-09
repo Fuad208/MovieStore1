@@ -1,9 +1,10 @@
-import { red, blue, blueGrey, yellow, green } from '@material-ui/core/colors';
+// theme/palette.js
+import { red, blue, blueGrey, yellow, green } from '@mui/material/colors';
 const white = '#FFF';
 const black = '#000';
 
 export default {
-  type: 'light',
+  mode: 'light', // Updated from 'type' to 'mode' for MUI v5
   common: {
     black,
     white,
@@ -29,7 +30,7 @@ export default {
   secondary: {
     contrastText: white,
     main: '#7d58ff',
-    light: '',
+    light: '#bb86fc',
     dark: '#37248F'
   },
   success: {
@@ -48,9 +49,9 @@ export default {
     light: yellow[300],
     main: yellow[500],
     dark: yellow[700],
-    contrastText: white
+    contrastText: black // Better contrast for warning
   },
-  danger: {
+  error: { // Changed from 'danger' to 'error' for MUI v5
     light: red[300],
     main: red[500],
     dark: red[700],
@@ -59,15 +60,15 @@ export default {
   text: {
     primary: blueGrey[900],
     secondary: blueGrey[600],
-    link: blue[600]
+    disabled: blueGrey[400],
+    hint: blueGrey[400]
   },
   background: {
     default: '#f8fafc',
-    dark: 'rgb(26, 26, 26)',
     paper: white
   },
-  border: '#DFE3E8',
   divider: '#DFE3E8',
+  // Custom colors maintained
   oxfordBlue: 'rgba(5, 41, 73, 1)',
   prussianBlue: 'rgba(19, 49, 92, 1)',
   darkCerulean: 'rgba(19, 64, 116, 1)',

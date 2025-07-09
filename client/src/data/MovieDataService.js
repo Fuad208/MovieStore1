@@ -16,10 +16,31 @@ export const genreData = [
 
 export const languageData = [
   "English",
-  "Indonesia",
+  "Indonesian", // Fixed typo
   "Korean",
   "Japanese",
   "German",
   "Greek",
-  "France"
+  "French" // Fixed typo
 ];
+
+// Add a proper service class
+export class MovieDataService {
+  static getGenres() {
+    return genreData;
+  }
+
+  static getLanguages() {
+    return languageData;
+  }
+
+  static isValidGenre(genre) {
+    return genreData.includes(genre.toLowerCase());
+  }
+
+  static isValidLanguage(language) {
+    return languageData.includes(language);
+  }
+}
+
+export default MovieDataService;

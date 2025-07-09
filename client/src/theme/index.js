@@ -1,11 +1,8 @@
-// @ts-nocheck
-import { createMuiTheme } from '@material-ui/core/styles';
-// import palette from './palette';
+import { createTheme } from '@mui/material/styles'; // Updated import
 import paletteDark from './paletteDark';
 import typography from './typography';
 
-// read more at https://material-ui.com/customization/themes
-const theme = createMuiTheme({
+const theme = createTheme({
   palette: paletteDark,
   typography,
   zIndex: {
@@ -14,7 +11,16 @@ const theme = createMuiTheme({
   },
   topBar: {
     height: '56px'
-  }
+  },
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 960,
+      lg: 1280,
+      xl: 1920,
+    },
+  },
 });
 
 export default theme;
